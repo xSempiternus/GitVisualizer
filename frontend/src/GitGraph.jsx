@@ -22,6 +22,9 @@ function GitGraph({ data }) {
   // Guarda el hash de los datos para detectar cambios reales
   const dataSignatureRef = useRef(null)
 
+  // Track del resetKey anterior para detectar cambios
+  const prevResetKeyRef = useRef(0)
+
   // Trigger para forzar reset
   const [resetKey, setResetKey] = useState(0)
 
@@ -35,18 +38,26 @@ function GitGraph({ data }) {
   useEffect(() => {
     if (!data || !data.commits || data.commits.length === 0) return
 
+    // Detecta si fue un reset (resetKey cambió)
+    const isReset = resetKey !== prevResetKeyRef.current
+    prevResetKeyRef.current = resetKey
+
+    // Si fue un reset, limpia el cache para forzar re-render
+    if (isReset) {
+      console.log('🔄 Reset triggered - clearing positions')
+      positionsRef.current.clear()
+      dataSignatureRef.current = null
+    }
+
     const newSignature = getDataSignature(data)
 
-    // Si los datos son los mismos Y no es un reset, no re-renderizar
-    if (newSignature === dataSignatureRef.current && resetKey === 0) {
+    // Si la firma de datos no cambió, NO renderizar
+    if (newSignature === dataSignatureRef.current) {
+      console.log('✓ Datos sin cambios - manteniendo posiciones')
       return
     }
 
-    // Si es un reset, limpia las posiciones guardadas
-    if (resetKey > 0) {
-      positionsRef.current.clear()
-    }
-
+    console.log('🆕 Datos cambiaron - re-renderizando')
     dataSignatureRef.current = newSignature
 
     const container = containerRef.current
