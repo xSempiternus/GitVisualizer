@@ -36,13 +36,25 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>🌳 Git Visualizer</h1>
+        <div className="header-brand">
+          <div className="brand-logo"></div>
+          <h1>Git Visualizer</h1>
+        </div>
         <div className="info">
-          <span>📦 {data.commits.length} commits</span>
-          <span>·</span>
-          <span>🌿 {data.branches.length} branches</span>
-          <span>·</span>
-          <span>✨ <strong>{data.HEAD.branch}</strong></span>
+          <div className="info-stat">
+            <span className="info-value">{data.commits.length}</span>
+            <span className="info-label">commits</span>
+          </div>
+          <div className="info-divider"></div>
+          <div className="info-stat">
+            <span className="info-value">{data.branches.length}</span>
+            <span className="info-label">branches</span>
+          </div>
+          <div className="info-divider"></div>
+          <div className="info-stat">
+            <span className="info-value head-branch">{data.HEAD.branch}</span>
+            <span className="info-label">HEAD</span>
+          </div>
         </div>
       </header>
 
@@ -50,61 +62,69 @@ function App() {
         <GitGraph data={data} branches={data.branches} />
 
         <aside className="sidebar">
-          <h3>Branches</h3>
-          <ul className="branch-list">
-            {data.branches.map(branch => (
-              <li
-                key={branch.name}
-                className={branch.head === data.HEAD.commit ? 'active' : ''}
-                style={{ borderLeftColor: branch.color }}
-              >
-                <span className="branch-dot" style={{ backgroundColor: branch.color }}></span>
-                <div>
-                  <div className="branch-name">{branch.name}</div>
-                  <code className="branch-hash">{branch.head}</code>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <h3>Autores</h3>
-          <ul className="authors-list">
-            {[...new Set(data.commits.map(c => c.author))].map(author => {
-              const authorCommits = data.commits.filter(c => c.author === author);
-              return (
-                <li key={author} className="author-item">
-                  <div className="author-avatar">
-                    {author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+          <section className="sidebar-section">
+            <h3>Branches</h3>
+            <ul className="branch-list">
+              {data.branches.map(branch => (
+                <li
+                  key={branch.name}
+                  className={branch.head === data.HEAD.commit ? 'active' : ''}
+                >
+                  <span className="branch-indicator" style={{ backgroundColor: branch.color }}></span>
+                  <div className="branch-content">
+                    <div className="branch-name">{branch.name}</div>
+                    <code className="branch-hash">{branch.head}</code>
                   </div>
-                  <div className="author-info">
-                    <div className="author-name">{author}</div>
-                    <small>{authorCommits.length} commits</small>
-                  </div>
+                  {branch.head === data.HEAD.commit && <span className="head-badge">HEAD</span>}
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          </section>
 
-          <h3>Commits por Rama</h3>
-          {data.branches.map(branch => {
-            const branchCommits = data.commits.filter(c => c.branches?.includes(branch.name));
-            return (
-              <div key={branch.name} className="branch-commits">
-                <div className="branch-group-title" style={{ color: branch.color }}>
-                  🌿 {branch.name}
-                </div>
-                <ul className="commits-list">
-                  {branchCommits.slice(0, 4).map(commit => (
-                    <li key={commit.fullHash} title={`${commit.message}\nAutor: ${commit.author}`}>
-                      <code>{commit.hash}</code>
-                      <small>{commit.message.split('\n')[0].slice(0, 30)}</small>
-                      <small className="commit-author">👤 {commit.author}</small>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
+          <section className="sidebar-section">
+            <h3>Contributors</h3>
+            <ul className="authors-list">
+              {[...new Set(data.commits.map(c => c.author))].map(author => {
+                const authorCommits = data.commits.filter(c => c.author === author);
+                return (
+                  <li key={author} className="author-item">
+                    <div className="author-avatar">
+                      {author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="author-info">
+                      <div className="author-name">{author}</div>
+                      <small>{authorCommits.length} {authorCommits.length === 1 ? 'commit' : 'commits'}</small>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <section className="sidebar-section">
+            <h3>Recent Activity</h3>
+            <ul className="recent-commits">
+              {[...data.commits]
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 5)
+                .map(commit => (
+                  <li key={commit.fullHash} className="recent-commit-item" title={commit.message}>
+                    <span className="recent-commit-dot" style={{ backgroundColor: commit.color }}></span>
+                    <div className="recent-commit-content">
+                      <div className="recent-commit-message">
+                        {commit.message.split('\n')[0].slice(0, 40)}
+                        {commit.message.length > 40 && '…'}
+                      </div>
+                      <div className="recent-commit-meta">
+                        <code>{commit.hash}</code>
+                        <span>·</span>
+                        <span>{commit.author}</span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </section>
         </aside>
       </div>
     </div>

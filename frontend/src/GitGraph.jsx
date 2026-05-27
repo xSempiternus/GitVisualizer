@@ -4,6 +4,36 @@ import Glossary from './Glossary'
 import './GitGraph.css'
 
 /**
+ * Formatea timestamp Unix como tiempo relativo: "hace 5 min", "ayer", etc.
+ */
+function getRelativeTime(timestamp) {
+  const now = Date.now() / 1000
+  const diff = now - timestamp
+
+  if (diff < 60) return 'ahora'
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`
+  if (diff < 604800) return `hace ${Math.floor(diff / 86400)}d`
+  if (diff < 2592000) return `hace ${Math.floor(diff / 604800)}sem`
+  if (diff < 31536000) return `hace ${Math.floor(diff / 2592000)}mes`
+  return `hace ${Math.floor(diff / 31536000)}año`
+}
+
+/**
+ * Formatea fecha absoluta: "27 may 2026, 14:30"
+ */
+function getAbsoluteDate(timestamp) {
+  const date = new Date(timestamp * 1000)
+  return date.toLocaleString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+/**
  * GitGraph: Visualización vertical estilo "git log --graph"
  *
  * Layout:
@@ -130,8 +160,8 @@ function GitGraph({ data, branches }) {
     // Ordena commits por timestamp DESCENDENTE (más nuevos arriba)
     const sortedCommits = [...commits].sort((a, b) => b.timestamp - a.timestamp)
 
-    const VERTICAL_SPACING = 90
-    const LANE_WIDTH = 280
+    const VERTICAL_SPACING = 75
+    const LANE_WIDTH = 300
     const TOP_PADDING = 100
 
     const centerX = width / 2
@@ -268,7 +298,7 @@ function GitGraph({ data, branches }) {
     // Crea columnas verticales suaves para cada rama
     const uniqueLanes = [...new Set(nodes.map(n => n.lane))]
     uniqueLanes.forEach(lane => {
-      const x = width / 2 + (lane * 280)
+      const x = width / 2 + (lane * 300)
       const isMainLane = lane === 0
 
       // Encuentra el color de la rama de este lane
@@ -300,7 +330,7 @@ function GitGraph({ data, branches }) {
 
     // Label del nombre de cada rama arriba
     uniqueLanes.forEach(lane => {
-      const x = width / 2 + (lane * 280)
+      const x = width / 2 + (lane * 300)
       const isMainLane = lane === 0
 
       // Encuentra qué ramas están en este lane
@@ -318,7 +348,7 @@ function GitGraph({ data, branches }) {
           .attr('class', isMainLane ? 'lane-header main-lane-header' : 'lane-header')
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'middle')
-          .text(`🌿 ${branchesInLane.join(' / ')}`)
+          .text(branchesInLane.join(' / '))
 
         // Background pill
         const bbox = text.node().getBBox()
@@ -404,15 +434,14 @@ function GitGraph({ data, branches }) {
       .text(d => d.isHead ? '⭐' : '●')
       .attr('fill', d => d.isHead ? '#fbbf24' : '#0a0e27')
 
-    // Info del commit al lado del nodo (mensaje + autor)
+    // Info del commit al lado del nodo (mensaje + meta)
     const commitInfo = labelGroup.selectAll('g.commit-info')
       .data(nodes)
       .join('g')
       .attr('class', 'commit-info')
       .attr('transform', d => {
-        // Posicionar a la derecha del nodo si lane <= 0, a la izquierda si lane > 0
         const radius = d.isHead ? HEAD_RADIUS : (d.lane === 0 ? MAIN_NODE_RADIUS : NODE_RADIUS)
-        const offsetX = d.lane > 0 ? -(radius + 12) : (radius + 12)
+        const offsetX = d.lane > 0 ? -(radius + 16) : (radius + 16)
         return `translate(${d.x + offsetX}, ${d.y})`
       })
       .attr('pointer-events', 'none')
@@ -422,21 +451,29 @@ function GitGraph({ data, branches }) {
       const isRight = d.lane <= 0
       const anchor = isRight ? 'start' : 'end'
 
+      // Hash en monospace (línea superior)
+      group.append('text')
+        .attr('class', 'commit-hash-inline')
+        .attr('text-anchor', anchor)
+        .attr('dominant-baseline', 'baseline')
+        .attr('y', -16)
+        .text(d.hash)
+
       // Mensaje (línea principal)
       group.append('text')
         .attr('class', 'commit-message')
         .attr('text-anchor', anchor)
         .attr('dominant-baseline', 'baseline')
-        .attr('y', -4)
-        .text(d.message.slice(0, 45) + (d.message.length > 45 ? '...' : ''))
+        .attr('y', -2)
+        .text(d.message.slice(0, 50) + (d.message.length > 50 ? '...' : ''))
 
-      // Autor + hash (línea secundaria)
+      // Autor + fecha relativa (línea inferior)
       group.append('text')
         .attr('class', 'commit-meta')
         .attr('text-anchor', anchor)
         .attr('dominant-baseline', 'hanging')
-        .attr('y', 6)
-        .text(`👤 ${d.author} · 📦 ${d.hash}`)
+        .attr('y', 8)
+        .text(`${d.author} · ${getRelativeTime(d.timestamp)}`)
     })
 
     // Branch label arriba del nodo si es head de una rama
@@ -457,23 +494,24 @@ function GitGraph({ data, branches }) {
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .attr('fill', d.color)
-        .text(`🌿 ${d.branches.join(', ')}`)
+        .text(d.branches.join(' · '))
 
       const bbox = text.node().getBBox()
       group.insert('rect', 'text')
         .attr('x', bbox.x - 8)
-        .attr('y', bbox.y - 4)
+        .attr('y', bbox.y - 3)
         .attr('width', bbox.width + 16)
-        .attr('height', bbox.height + 8)
-        .attr('rx', (bbox.height + 8) / 2)
-        .attr('fill', 'rgba(15, 23, 42, 0.95)')
+        .attr('height', bbox.height + 6)
+        .attr('rx', 4)
+        .attr('fill', 'rgba(10, 14, 26, 0.95)')
         .attr('stroke', d.color)
-        .attr('stroke-width', 1.5)
+        .attr('stroke-width', 1)
+        .attr('stroke-opacity', 0.5)
     })
 
     // Tooltips
     node.append('title')
-      .text(d => `📦 ${d.hash}\n💬 ${d.message}\n👤 ${d.author}\n🕐 ${new Date(d.timestamp * 1000).toLocaleString()}\n${d.branches.length > 0 ? '🌿 ' + d.branches.join(', ') : ''}`)
+      .text(d => `Hash: ${d.hash}\n\nMensaje: ${d.message}\n\nAutor: ${d.author}\nFecha: ${getAbsoluteDate(d.timestamp)} (${getRelativeTime(d.timestamp)})\n${d.branches.length > 0 ? '\nRamas: ' + d.branches.join(', ') : ''}`)
 
     // ============================================
     // PASO 7: Drag (mover nodos manualmente)
@@ -576,41 +614,33 @@ function GitGraph({ data, branches }) {
       <Glossary branches={branches} />
 
       <button className="reset-button" onClick={handleReset} title="Reorganizar layout automáticamente">
-        🔄 Reset Layout
+        Reset Layout
       </button>
 
       <div className="graph-legend">
         <div className="legend-item">
-          <div className="legend-circle head">⭐</div>
-          <span>HEAD (commit actual)</span>
+          <div className="legend-circle head"></div>
+          <span>HEAD</span>
         </div>
         <div className="legend-item">
           <div className="legend-circle main"></div>
-          <span>📦 Commits en main</span>
+          <span>Main branch</span>
         </div>
         <div className="legend-item">
           <div className="legend-circle"></div>
-          <span>📦 Commits en otras ramas</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-line main-line"></div>
-          <span>🌿 Rama principal</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-line"></div>
-          <span>↔️ Otras conexiones</span>
+          <span>Other commits</span>
         </div>
       </div>
 
       <div className="graph-controls">
         <div className="control-item">
-          <kbd>🖱️ Rueda</kbd> Zoom
+          <kbd>Scroll</kbd> <span>Zoom</span>
         </div>
         <div className="control-item">
-          <kbd>✋ Drag</kbd> Desplazar
+          <kbd>Drag</kbd> <span>Pan canvas</span>
         </div>
         <div className="control-item">
-          <kbd>👆 Nodo</kbd> Mover commit
+          <kbd>Click</kbd> <span>Move node</span>
         </div>
       </div>
     </div>

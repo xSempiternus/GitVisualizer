@@ -16,7 +16,7 @@ function Glossary({ branches, branchColors }) {
         onClick={() => setIsOpen(true)}
         title="Abrir glosario y ayuda"
       >
-        📖 Glosario
+        Docs
       </button>
 
       {isOpen && (
