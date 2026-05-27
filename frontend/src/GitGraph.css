@@ -4,7 +4,7 @@
 .git-graph-container {
   flex: 1;
   position: relative;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1220 100%);
+  background: #0a0e1a;
   overflow: hidden;
   width: 100%;
   height: 100%;
@@ -18,25 +18,7 @@
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 50%, rgba(125, 211, 252, 0.04) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.02) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Grid pattern background sutil */
-.git-graph-container::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(rgba(125, 211, 252, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(125, 211, 252, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.04) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -61,18 +43,19 @@
 }
 
 .lane-header {
-  font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
-  fill: #cbd5e1;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', 'Monaco', monospace;
+  font-weight: 500;
+  fill: #94a3b8;
   pointer-events: none;
   user-select: none;
+  letter-spacing: 0.3px;
 }
 
 .main-lane-header {
-  font-size: 14px;
-  fill: #7dd3fc;
-  font-weight: 800;
+  font-size: 12px;
+  fill: #38bdf8;
+  font-weight: 600;
 }
 
 /* ============================================
@@ -142,25 +125,36 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
+/* Hash inline (encima del mensaje) */
+.commit-hash-inline {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', 'Monaco', monospace;
+  font-weight: 500;
+  fill: #64748b;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.3px;
+  text-transform: lowercase;
+}
+
 /* Información del commit (mensaje + autor) al lado del nodo */
 .commit-message {
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 600;
-  fill: #e0f2fe;
+  font-weight: 500;
+  fill: #f1f5f9;
   pointer-events: none;
   user-select: none;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+  letter-spacing: -0.1px;
 }
 
 .commit-meta {
   font-size: 11px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 500;
-  fill: #94a3b8;
+  font-weight: 400;
+  fill: #64748b;
   pointer-events: none;
   user-select: none;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
 }
 
 /* Nodos de la rama main son más prominentes */
@@ -188,15 +182,14 @@
    ============================================ */
 .graph-legend {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(15, 23, 42, 0.9);
+  bottom: 16px;
+  left: 16px;
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 16px 20px;
-  font-size: 0.85rem;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(10px);
   z-index: 10;
 }
 
@@ -267,37 +260,33 @@
    ============================================ */
 .reset-button {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(15, 23, 42, 0.9);
+  top: 16px;
+  right: 16px;
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid #1e293b;
-  border-radius: 10px;
-  padding: 10px 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #7dd3fc;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #cbd5e1;
   cursor: pointer;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(125, 211, 252, 0.1);
-  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  transition: all 0.15s ease;
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: inherit;
 }
 
 .reset-button:hover {
   background: rgba(30, 41, 59, 0.95);
-  color: #e0f2fe;
-  border-color: #7dd3fc;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(125, 211, 252, 0.3);
-  transform: translateY(-2px);
+  color: #f1f5f9;
+  border-color: #38bdf8;
 }
 
 .reset-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 1);
 }
 
 /* ============================================
@@ -305,18 +294,17 @@
    ============================================ */
 .graph-controls {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(15, 23, 42, 0.9);
+  bottom: 16px;
+  right: 16px;
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 16px 20px;
-  font-size: 0.85rem;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   z-index: 10;
 }
 
