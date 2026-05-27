@@ -225,6 +225,76 @@ class GitReader {
   }
 
   /**
+   * Determina a qué rama(s) pertenece cada commit
+   * Hace un BFS desde cada rama hacia atrás
+   */
+  assignBranchesToCommits(commits, branches) {
+    const commitToBranches = new Map();
+
+    // Inicializa cada commit con un array vacío de branches
+    for (const [hash, commit] of commits) {
+      commitToBranches.set(hash, []);
+    }
+
+    // Para cada branch, marca todos los commits alcanzables desde ella
+    for (const branch of branches) {
+      const visited = new Set();
+      const queue = [branch.hash];
+
+      while (queue.length > 0) {
+        const hash = queue.shift();
+        if (visited.has(hash)) continue;
+        visited.add(hash);
+
+        const commit = commits.get(hash);
+        if (!commit) continue;
+
+        // Agrega esta rama al commit
+        const branchList = commitToBranches.get(hash);
+        if (branchList && !branchList.includes(branch.name)) {
+          branchList.push(branch.name);
+        }
+
+        // Agrega los parents a la cola
+        if (commit.parents) {
+          for (const parent of commit.parents) {
+            if (!visited.has(parent)) {
+              queue.push(parent);
+            }
+          }
+        }
+      }
+    }
+
+    return commitToBranches;
+  }
+
+  /**
+   * Asigna colores a las branches
+   */
+  assignColors() {
+    const colors = [
+      '#3fb950', // verde
+      '#58a6ff', // azul
+      '#d29922', // naranja
+      '#a371f7', // púrpura
+      '#fb8500', // rojo-naranja
+      '#1f883d', // verde oscuro
+      '#0969da', // azul oscuro
+      '#6e40c9'  // púrpura oscuro
+    ];
+
+    const colorMap = new Map();
+    const branches = this.getBranches();
+
+    branches.forEach((branch, index) => {
+      colorMap.set(branch.name, colors[index % colors.length]);
+    });
+
+    return colorMap;
+  }
+
+  /**
    * Método principal: retorna toda la estructura del grafo
    */
   getGraphData() {
@@ -233,15 +303,29 @@ class GitReader {
     const currentBranch = this.getCurrentBranch();
     const headCommit = this.getHeadCommit();
 
+    // Asigna branches a commits
+    const commitToBranches = this.assignBranchesToCommits(commits, branches);
+
+    // Asigna colores a branches
+    const branchColors = this.assignColors();
+
     // Construye la estructura que el frontend necesita
     return {
-      commits: Array.from(commits.values()),
+      commits: Array.from(commits.values()).map(commit => ({
+        ...commit,
+        branches: commitToBranches.get(commit.fullHash) || [],
+        color: commitToBranches.get(commit.fullHash)?.length > 0
+          ? branchColors.get(commitToBranches.get(commit.fullHash)[0])
+          : '#58a6ff'
+      })),
       branches: branches.map(b => ({
         name: b.name,
         head: b.hash.slice(0, 7),
         fullHead: b.hash,
-        type: b.type
+        type: b.type,
+        color: branchColors.get(b.name)
       })),
+      branchColors: Object.fromEntries(branchColors),
       HEAD: {
         branch: currentBranch,
         commit: headCommit ? headCommit.slice(0, 7) : null
