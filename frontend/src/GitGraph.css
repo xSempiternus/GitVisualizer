@@ -50,6 +50,32 @@
 }
 
 /* ============================================
+   CARRILES (lane backgrounds)
+   ============================================ */
+.lane-bg {
+  pointer-events: none;
+}
+
+.main-lane-bg {
+  pointer-events: none;
+}
+
+.lane-header {
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  fill: #cbd5e1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.main-lane-header {
+  font-size: 14px;
+  fill: #7dd3fc;
+  font-weight: 800;
+}
+
+/* ============================================
    LINKS (líneas entre commits)
    ============================================ */
 .link {
@@ -58,6 +84,12 @@
   opacity: 0.6;
   pointer-events: none;
   transition: all 0.3s ease;
+}
+
+.main-link {
+  stroke-width: 4;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px currentColor);
 }
 
 /* ============================================
@@ -108,6 +140,36 @@
   fill: #e0f2fe;
   letter-spacing: 0.5px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+/* Información del commit (mensaje + autor) al lado del nodo */
+.commit-message {
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  fill: #e0f2fe;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+}
+
+.commit-meta {
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  fill: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
+}
+
+/* Nodos de la rama main son más prominentes */
+.main-node {
+  filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.5));
+}
+
+.main-node:hover {
+  filter: drop-shadow(0 0 20px rgba(125, 211, 252, 0.9));
 }
 
 /* Branch label arriba del nodo */
@@ -178,12 +240,26 @@
   font-size: 10px;
 }
 
+.legend-circle.main {
+  background: #7dd3fc;
+  width: 18px;
+  height: 18px;
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.6);
+  border: 3px solid #0a0e27;
+}
+
 .legend-line {
   width: 24px;
   height: 2px;
   background: #475569;
   border-radius: 1px;
   flex-shrink: 0;
+}
+
+.legend-line.main-line {
+  height: 4px;
+  background: #7dd3fc;
+  box-shadow: 0 0 4px rgba(125, 211, 252, 0.6);
 }
 
 /* ============================================

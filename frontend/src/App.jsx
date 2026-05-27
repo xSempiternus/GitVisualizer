@@ -67,19 +67,38 @@ function App() {
             ))}
           </ul>
 
+          <h3>Autores</h3>
+          <ul className="authors-list">
+            {[...new Set(data.commits.map(c => c.author))].map(author => {
+              const authorCommits = data.commits.filter(c => c.author === author);
+              return (
+                <li key={author} className="author-item">
+                  <div className="author-avatar">
+                    {author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="author-info">
+                    <div className="author-name">{author}</div>
+                    <small>{authorCommits.length} commits</small>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
           <h3>Commits por Rama</h3>
           {data.branches.map(branch => {
             const branchCommits = data.commits.filter(c => c.branches?.includes(branch.name));
             return (
               <div key={branch.name} className="branch-commits">
                 <div className="branch-group-title" style={{ color: branch.color }}>
-                  {branch.name}
+                  🌿 {branch.name}
                 </div>
                 <ul className="commits-list">
-                  {branchCommits.slice(0, 3).map(commit => (
-                    <li key={commit.fullHash} title={commit.message}>
+                  {branchCommits.slice(0, 4).map(commit => (
+                    <li key={commit.fullHash} title={`${commit.message}\nAutor: ${commit.author}`}>
                       <code>{commit.hash}</code>
-                      <small>{commit.message.split('\n')[0].slice(0, 25)}</small>
+                      <small>{commit.message.split('\n')[0].slice(0, 30)}</small>
+                      <small className="commit-author">👤 {commit.author}</small>
                     </li>
                   ))}
                 </ul>
