@@ -37,6 +37,8 @@ function GitGraph({ data }) {
       message: commit.message,
       author: commit.author,
       timestamp: commit.timestamp,
+      branches: commit.branches || [],
+      color: commit.color || '#58a6ff',
       isHead: commit.fullHash === data.HEAD.commit
     }))
 
@@ -146,34 +148,48 @@ function GitGraph({ data }) {
     const node = nodeGroup.selectAll('circle')
       .data(nodes)
       .join('circle')
-      .attr('r', d => d.isHead ? 12 : 9)
+      .attr('r', d => d.isHead ? 13 : 10)
       .attr('class', d => `node ${d.isHead ? 'head' : ''}`)
       .attr('fill', d => {
-        // Color diferente para HEAD
-        if (d.isHead) return '#3fb950'
-        // Gradiente de color por antigüedad (commits viejos = color diferente)
-        return '#58a6ff'
+        // Si es HEAD, usa color más brillante
+        if (d.isHead) return d.color
+        return d.color
       })
-      .attr('stroke', '#0d1117')
-      .attr('stroke-width', 2)
+      .attr('stroke', d => d.isHead ? '#0d1117' : '#0d1117')
+      .attr('stroke-width', d => d.isHead ? 3 : 2)
       .call(drag(simulation))
 
     // ============================================
     // PASO 6: Agregar labels de texto
     // ============================================
 
-    const labels = nodeGroup.selectAll('text')
+    // Labels de commits (hash)
+    const labels = nodeGroup.selectAll('text.node-label')
       .data(nodes)
       .join('text')
       .attr('class', 'node-label')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'middle')
-      .attr('font-size', '11px')
+      .attr('font-size', '10px')
       .attr('font-family', 'Monaco, monospace')
-      .attr('font-weight', d => d.isHead ? 'bold' : 'normal')
-      .attr('fill', d => d.isHead ? '#0d1117' : '#c9d1d9')
+      .attr('font-weight', 'bold')
+      .attr('fill', '#0d1117')
       .attr('pointer-events', 'none')
       .text(d => d.hash)
+
+    // Labels de ramas (si el commit es head de una rama)
+    const branchLabels = nodeGroup.selectAll('text.branch-label')
+      .data(nodes.filter(n => n.branches.length > 0))
+      .join('text')
+      .attr('class', 'branch-label')
+      .attr('text-anchor', 'start')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '11px')
+      .attr('font-family', 'sans-serif')
+      .attr('font-weight', '600')
+      .attr('fill', d => d.color)
+      .attr('pointer-events', 'none')
+      .text(d => d.branches.join(', '))
 
     // ============================================
     // PASO 7: Agregar tooltips (información)
@@ -203,6 +219,10 @@ function GitGraph({ data }) {
       labels
         .attr('x', d => d.x)
         .attr('y', d => d.y)
+
+      branchLabels
+        .attr('x', d => d.x + 18)
+        .attr('y', d => d.y - 15)
     })
 
     // ============================================
