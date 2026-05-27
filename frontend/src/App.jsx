@@ -49,24 +49,41 @@ function App() {
 
         <aside className="sidebar">
           <h3>Branches</h3>
-          <ul>
+          <ul className="branch-list">
             {data.branches.map(branch => (
-              <li key={branch.name} className={branch.head === data.HEAD.commit ? 'active' : ''}>
-                <span className="badge">{branch.type}</span>
-                {branch.name}
+              <li
+                key={branch.name}
+                className={branch.head === data.HEAD.commit ? 'active' : ''}
+                style={{ borderLeftColor: branch.color }}
+              >
+                <span className="branch-dot" style={{ backgroundColor: branch.color }}></span>
+                <div>
+                  <div className="branch-name">{branch.name}</div>
+                  <code className="branch-hash">{branch.head}</code>
+                </div>
               </li>
             ))}
           </ul>
 
-          <h3>Últimos Commits</h3>
-          <ul>
-            {data.commits.slice(0, 5).map(commit => (
-              <li key={commit.fullHash} title={commit.message}>
-                <code>{commit.hash}</code>
-                <small>{commit.message.slice(0, 30)}</small>
-              </li>
-            ))}
-          </ul>
+          <h3>Commits por Rama</h3>
+          {data.branches.map(branch => {
+            const branchCommits = data.commits.filter(c => c.branches?.includes(branch.name));
+            return (
+              <div key={branch.name} className="branch-commits">
+                <div className="branch-group-title" style={{ color: branch.color }}>
+                  {branch.name}
+                </div>
+                <ul className="commits-list">
+                  {branchCommits.slice(0, 3).map(commit => (
+                    <li key={commit.fullHash} title={commit.message}>
+                      <code>{commit.hash}</code>
+                      <small>{commit.message.split('\n')[0].slice(0, 25)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </aside>
       </div>
     </div>

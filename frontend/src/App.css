@@ -76,6 +76,90 @@
   list-style: none;
 }
 
+.branch-list {
+  list-style: none;
+}
+
+.branch-list li {
+  padding: 0.6rem;
+  margin: 0.5rem 0;
+  background: #0d1117;
+  border-radius: 6px;
+  border-left: 3px solid #30363d;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.branch-list li:hover {
+  background: #1c2128;
+  transform: translateX(2px);
+}
+
+.branch-list li.active {
+  background: #1c2128;
+  font-weight: bold;
+  box-shadow: inset 0 0 8px rgba(88, 166, 255, 0.2);
+}
+
+.branch-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.branch-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.branch-hash {
+  display: block;
+  font-size: 0.75rem;
+  color: #8b949e;
+  margin-top: 0.2rem;
+}
+
+.branch-commits {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background: #0d1117;
+  border-radius: 6px;
+  border-left: 3px solid #30363d;
+}
+
+.branch-group-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.commits-list {
+  list-style: none;
+  font-size: 0.8rem;
+}
+
+.commits-list li {
+  padding: 0.4rem 0.5rem;
+  margin: 0.3rem 0;
+  background: rgba(88, 166, 255, 0.05);
+  border-radius: 4px;
+  border-left: 2px solid #30363d;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.commits-list li:hover {
+  background: rgba(88, 166, 255, 0.1);
+  border-left-color: #58a6ff;
+}
+
 .sidebar li {
   padding: 0.5rem;
   margin: 0.25rem 0;
