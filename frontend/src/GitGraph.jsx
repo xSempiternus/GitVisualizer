@@ -41,9 +41,14 @@ function GitGraph({ data, branches }) {
   }
 
   /**
-   * Asigna cada commit a un carril (lane) basado en su rama principal
-   * - main/master → lane 0 (centro)
-   * - otras ramas → lanes -1, 1, -2, 2, ...
+   * Asigna cada commit a un carril (lane).
+   *
+   * Algoritmo correcto (como git log --graph):
+   * 1. Walk first-parent desde HEAD de main → estos commits van al lane 0
+   * 2. Para cada otra rama, walk desde su HEAD → los commits no asignados
+   *    se asignan al lane de esa rama
+   * 3. Esto hace que los commits aparezcan en el lane de la rama donde
+   *    fueron CREADOS, no donde terminaron por merge
    */
   const assignLanes = (commits, branches) => {
     const mainBranch = getMainBranch(branches)
@@ -59,18 +64,57 @@ function GitGraph({ data, branches }) {
       laneMap.set(branch.name, lane)
     })
 
-    // Asigna lanes a commits según su rama primaria
+    // Map de hash → commit para búsquedas rápidas
+    const commitMap = new Map()
+    commits.forEach(c => commitMap.set(c.fullHash, c))
+
     const commitLanes = new Map()
-    commits.forEach(commit => {
-      if (commit.branches && commit.branches.length > 0) {
-        // Prioriza la rama principal si está
-        const mainBranchName = mainBranch.name
-        const primaryBranch = commit.branches.includes(mainBranchName)
-          ? mainBranchName
-          : commit.branches[0]
-        commitLanes.set(commit.fullHash, laneMap.get(primaryBranch) ?? 0)
-      } else {
-        commitLanes.set(commit.fullHash, 0)
+
+    // PASO 1: First-parent walk desde HEAD de main → lane 0
+    // Esto recorre la "línea principal" de main
+    let current = mainBranch.fullHead
+    const visited = new Set()
+    while (current && !visited.has(current)) {
+      visited.add(current)
+      commitLanes.set(current, 0)
+      const commit = commitMap.get(current)
+      if (!commit || !commit.parents || commit.parents.length === 0) break
+      // FIRST PARENT solamente (esto es la magia)
+      current = commit.parents[0]
+    }
+
+    // PASO 2: Para cada rama no-main, walk desde su HEAD
+    // Los commits no asignados van al lane de esa rama
+    otherBranches.forEach(branch => {
+      const lane = laneMap.get(branch.name)
+      const branchVisited = new Set()
+      const queue = [branch.fullHead]
+
+      while (queue.length > 0) {
+        const hash = queue.shift()
+        if (branchVisited.has(hash)) continue
+        branchVisited.add(hash)
+
+        // Solo asignar si no tiene lane (no está en main first-parent)
+        if (!commitLanes.has(hash)) {
+          commitLanes.set(hash, lane)
+        }
+
+        const commit = commitMap.get(hash)
+        if (commit?.parents) {
+          for (const parent of commit.parents) {
+            if (!branchVisited.has(parent)) {
+              queue.push(parent)
+            }
+          }
+        }
+      }
+    })
+
+    // Cualquier commit sin lane (huérfano) → lane 0
+    commits.forEach(c => {
+      if (!commitLanes.has(c.fullHash)) {
+        commitLanes.set(c.fullHash, 0)
       }
     })
 
@@ -86,9 +130,9 @@ function GitGraph({ data, branches }) {
     // Ordena commits por timestamp DESCENDENTE (más nuevos arriba)
     const sortedCommits = [...commits].sort((a, b) => b.timestamp - a.timestamp)
 
-    const VERTICAL_SPACING = 100
-    const LANE_WIDTH = 180
-    const TOP_PADDING = 80
+    const VERTICAL_SPACING = 90
+    const LANE_WIDTH = 280
+    const TOP_PADDING = 100
 
     const centerX = width / 2
 
@@ -224,24 +268,39 @@ function GitGraph({ data, branches }) {
     // Crea columnas verticales suaves para cada rama
     const uniqueLanes = [...new Set(nodes.map(n => n.lane))]
     uniqueLanes.forEach(lane => {
-      const x = width / 2 + (lane * 180)
+      const x = width / 2 + (lane * 280)
       const isMainLane = lane === 0
 
+      // Encuentra el color de la rama de este lane
+      let laneColor = '#7dd3fc'
+      laneMap.forEach((laneNum, branchName) => {
+        if (laneNum === lane) {
+          const branch = data.branches.find(b => b.name === branchName)
+          if (branch) laneColor = branch.color
+        }
+      })
+
+      // Background del carril
       lanesGroup.append('rect')
         .attr('class', isMainLane ? 'lane-bg main-lane-bg' : 'lane-bg')
-        .attr('x', x - (isMainLane ? 40 : 30))
+        .attr('x', x - (isMainLane ? 100 : 80))
         .attr('y', 0)
-        .attr('width', isMainLane ? 80 : 60)
+        .attr('width', isMainLane ? 200 : 160)
         .attr('height', totalHeight + 200)
-        .attr('fill', isMainLane ? 'rgba(125, 211, 252, 0.05)' : 'rgba(125, 211, 252, 0.02)')
-        .attr('stroke', isMainLane ? 'rgba(125, 211, 252, 0.15)' : 'transparent')
-        .attr('stroke-width', isMainLane ? 1 : 0)
-        .attr('rx', 8)
+        .attr('fill', isMainLane
+          ? `rgba(125, 211, 252, 0.08)`
+          : `${laneColor}10`)
+        .attr('stroke', isMainLane
+          ? 'rgba(125, 211, 252, 0.4)'
+          : `${laneColor}50`)
+        .attr('stroke-width', isMainLane ? 2 : 1.5)
+        .attr('stroke-dasharray', isMainLane ? 'none' : '8,4')
+        .attr('rx', 12)
     })
 
     // Label del nombre de cada rama arriba
     uniqueLanes.forEach(lane => {
-      const x = width / 2 + (lane * 180)
+      const x = width / 2 + (lane * 280)
       const isMainLane = lane === 0
 
       // Encuentra qué ramas están en este lane
