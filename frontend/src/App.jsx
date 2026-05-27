@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import GitGraph from './GitGraph'
+import Glossary from './Glossary'
 import './App.css'
 
 function App() {
@@ -46,7 +47,7 @@ function App() {
       </header>
 
       <div className="app-main">
-        <GitGraph data={data} />
+        <GitGraph data={data} branches={data.branches} />
 
         <aside className="sidebar">
           <h3>Branches</h3>

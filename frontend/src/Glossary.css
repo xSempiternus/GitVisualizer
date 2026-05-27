@@ -1,0 +1,433 @@
+/* ============================================
+   BOTÓN PARA ABRIR EL GLOSARIO
+   ============================================ */
+.glossary-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7dd3fc;
+  cursor: pointer;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(125, 211, 252, 0.1);
+  transition: all 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+}
+
+.glossary-toggle:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #e0f2fe;
+  border-color: #7dd3fc;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(125, 211, 252, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   OVERLAY (fondo oscuro semi-transparente)
+   ============================================ */
+.glossary-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ============================================
+   PANEL DEL GLOSARIO (modal centrado)
+   ============================================ */
+.glossary-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 800px;
+  max-height: 85vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 100%);
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(125, 211, 252, 0.1);
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.3s ease;
+}
+
+/* ============================================
+   HEADER DEL PANEL
+   ============================================ */
+.glossary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(90deg, #1a1f3a 0%, #0f172a 100%);
+  border-bottom: 1px solid #1e293b;
+}
+
+.glossary-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #e0f2fe;
+  font-weight: 700;
+}
+
+.glossary-close {
+  background: rgba(51, 65, 85, 0.5);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #cbd5e1;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.glossary-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+/* ============================================
+   TABS DE NAVEGACIÓN
+   ============================================ */
+.glossary-tabs {
+  display: flex;
+  padding: 0 2rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-bottom: 1px solid #1e293b;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.glossary-tabs button {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.glossary-tabs button:hover {
+  color: #e0f2fe;
+}
+
+.glossary-tabs button.active {
+  color: #7dd3fc;
+  border-bottom-color: #7dd3fc;
+}
+
+/* ============================================
+   CONTENIDO DEL GLOSARIO
+   ============================================ */
+.glossary-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.glossary-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.glossary-content::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+.glossary-content::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.glossary-content::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.glossary-section h3 {
+  margin: 0 0 1rem 0;
+  color: #e0f2fe;
+  font-size: 1.2rem;
+}
+
+.glossary-intro {
+  background: rgba(125, 211, 252, 0.08);
+  border-left: 3px solid #7dd3fc;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.glossary-section code {
+  background: rgba(51, 65, 85, 0.6);
+  color: #7dd3fc;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.glossary-section ul {
+  margin: 0.5rem 0 1rem 1.5rem;
+}
+
+.glossary-section li {
+  margin: 0.3rem 0;
+}
+
+/* ============================================
+   GRID DE COLORES
+   ============================================ */
+.color-legend-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.color-section-title {
+  color: #7dd3fc;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.color-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.color-card:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: #334155;
+}
+
+.color-card.special {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(15, 23, 42, 0.6));
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.color-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 2px solid #0a0e27;
+}
+
+.color-circle.head {
+  background: #fbbf24;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+}
+
+.color-card h4 {
+  margin: 0 0 0.3rem 0;
+  font-size: 0.95rem;
+  color: #e0f2fe;
+}
+
+.color-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+/* ============================================
+   CONCEPTOS
+   ============================================ */
+.concept {
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-left: 3px solid #7dd3fc;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.concept h4 {
+  margin: 0 0 0.5rem 0;
+  color: #e0f2fe;
+  font-size: 1rem;
+}
+
+.concept p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   CONTROLES EXPLICADOS
+   ============================================ */
+.control-explained {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+}
+
+.control-explained kbd {
+  background: #334155;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: 'Monaco', monospace;
+  font-size: 0.85rem;
+  color: #7dd3fc;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  min-width: 200px;
+  text-align: center;
+}
+
+.control-explained p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   PASOS DE "CÓMO FUNCIONA"
+   ============================================ */
+.how-step {
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 1.2rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+  color: #0a0e27;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 0 12px rgba(125, 211, 252, 0.4);
+}
+
+.how-step h4 {
+  margin: 0 0 0.5rem 0;
+  color: #e0f2fe;
+  font-size: 1rem;
+}
+
+.how-step p {
+  margin: 0.3rem 0;
+  font-size: 0.9rem;
+}
+
+/* ============================================
+   INFO BOX (tips, advertencias)
+   ============================================ */
+.info-box {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.1), rgba(15, 23, 42, 0.6));
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.info-box strong {
+  color: #7dd3fc;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .glossary-panel {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .glossary-header {
+    padding: 1rem 1.5rem;
+  }
+
+  .glossary-content {
+    padding: 1.5rem;
+  }
+
+  .glossary-tabs button {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .control-explained {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .control-explained kbd {
+    min-width: auto;
+  }
+}

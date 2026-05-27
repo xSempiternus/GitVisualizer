@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
+import Glossary from './Glossary'
 import './GitGraph.css'
 
 /**
@@ -12,7 +13,7 @@ import './GitGraph.css'
  * 4. Botón "Reset Layout" recalcula desde cero
  */
 
-function GitGraph({ data }) {
+function GitGraph({ data, branches }) {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
 
@@ -358,6 +359,8 @@ function GitGraph({ data }) {
   return (
     <div className="git-graph-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
+
+      <Glossary branches={branches} />
 
       <button className="reset-button" onClick={handleReset} title="Reorganizar layout automáticamente">
         🔄 Reset Layout
