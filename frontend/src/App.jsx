@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import GitGraph from './GitGraph'
 import Glossary from './Glossary'
+import SmartSuggestions from './SmartSuggestions'
 import './App.css'
 
 function App() {
@@ -8,26 +9,25 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    // Fetch datos del backend solo una vez al cargar
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/git-data')
-        if (!response.ok) throw new Error('Failed to fetch git data')
-        const jsonData = await response.json()
-        setData(jsonData)
-        setLoading(false)
-      } catch (err) {
-        setError(err.message)
-        setLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/git-data')
+      if (!response.ok) throw new Error('Failed to fetch git data')
+      const jsonData = await response.json()
+      setData(jsonData)
+      setLoading(false)
+    } catch (err) {
+      setError(err.message)
+      setLoading(false)
     }
+  }, [])
 
+  useEffect(() => {
     fetchData()
-    // Solo refetch cada 10 segundos si ha habido cambios en git
+    // Refetch cada 10 segundos
     const interval = setInterval(fetchData, 10000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchData])
 
   if (loading) return <div className="container"><p>Cargando repositorio...</p></div>
   if (error) return <div className="container"><p style={{color: 'red'}}>Error: {error}</p></div>
@@ -62,6 +62,8 @@ function App() {
         <GitGraph data={data} branches={data.branches} />
 
         <aside className="sidebar">
+          <SmartSuggestions onActionExecuted={fetchData} />
+
           <section className="sidebar-section">
             <h3>Branches</h3>
             <ul className="branch-list">
