@@ -1,7 +1,29 @@
+# Dependencias
 node_modules/
 package-lock.json
-.env
-.DS_Store
+
+# Builds y caché
 dist/
 build/
+.vite/
 *.log
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+.env.development
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test outputs
+coverage/
+.nyc_output/
