@@ -1,3 +1,6 @@
+/* ============================================
+   CONTAINER & BACKGROUND
+   ============================================ */
 .git-graph-container {
   flex: 1;
   position: relative;
@@ -15,8 +18,25 @@
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 50%, rgba(88, 166, 255, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(63, 185, 80, 0.02) 0%, transparent 50%);
+    radial-gradient(circle at 20% 50%, rgba(125, 211, 252, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grid pattern background sutil */
+.git-graph-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
   pointer-events: none;
   z-index: 0;
 }
@@ -29,129 +49,99 @@
   z-index: 1;
 }
 
+/* ============================================
+   LINKS (líneas entre commits)
+   ============================================ */
 .link {
-  stroke: #334155;
+  stroke: #475569;
   stroke-width: 2;
-  opacity: 0.5;
+  opacity: 0.6;
   pointer-events: none;
   transition: all 0.3s ease;
 }
 
-.link:hover {
-  stroke: #7dd3fc;
-  opacity: 0.9;
-  stroke-width: 2.5;
-  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.4));
-}
-
+/* ============================================
+   NODOS (círculos = commits)
+   ============================================ */
 .node {
   cursor: grab;
   filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.3));
-  transition: all 0.2s ease;
-  stroke: #0a0e27;
-  stroke-width: 2;
+  transition: filter 0.2s ease, stroke-width 0.2s ease;
 }
 
 .node:hover {
   filter: drop-shadow(0 0 16px rgba(125, 211, 252, 0.8));
-  cursor: grab;
-  stroke-width: 3;
-}
-
-.node.head {
-  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.6));
-  stroke-width: 3;
-}
-
-.node.head:hover {
-  filter: drop-shadow(0 0 20px rgba(34, 197, 94, 1));
-}
-
-.node-label {
-  font-size: 10px;
-  font-family: 'Monaco', 'Courier New', monospace;
-  pointer-events: none;
-  user-select: none;
-  font-weight: bold;
-  letter-spacing: -0.5px;
-}
-
-.branch-label {
-  font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  pointer-events: none;
-  user-select: none;
-  font-weight: 700;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
-  letter-spacing: 0.3px;
+  stroke-width: 4 !important;
 }
 
 .node:active {
   cursor: grabbing;
 }
 
-.graph-controls {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid #1e293b;
-  border-radius: 12px;
-  padding: 16px 20px;
-  font-size: 0.85rem;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.control-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #cbd5e1;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.control-item kbd {
-  background: #334155;
-  border: 1px solid #1e293b;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-family: 'Monaco', monospace;
-  font-size: 0.75rem;
-  color: #7dd3fc;
-  font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
 .node.head {
-  filter: drop-shadow(0 0 6px rgba(63, 185, 80, 0.6));
+  filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
 }
 
 .node.head:hover {
-  filter: drop-shadow(0 0 12px rgba(63, 185, 80, 1));
+  filter: drop-shadow(0 0 24px rgba(251, 191, 36, 1));
 }
 
+/* ============================================
+   LABELS (texto en el grafo)
+   ============================================ */
+
+/* Icono dentro del nodo (estrella o punto) */
+.node-icon {
+  pointer-events: none;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: bold;
+}
+
+/* Hash debajo del nodo */
+.hash-label {
+  font-size: 11px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  pointer-events: none;
+  user-select: none;
+  font-weight: 600;
+  fill: #e0f2fe;
+  letter-spacing: 0.5px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+/* Branch label arriba del nodo */
+.branch-label {
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  pointer-events: none;
+  user-select: none;
+  font-weight: 700;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+  letter-spacing: 0.3px;
+}
+
+/* ============================================
+   LEYENDA (esquina inferior izquierda)
+   ============================================ */
 .graph-legend {
   position: absolute;
   bottom: 20px;
   left: 20px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.9);
   border: 1px solid #1e293b;
   border-radius: 12px;
   padding: 16px 20px;
   font-size: 0.85rem;
   backdrop-filter: blur(15px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
+  z-index: 10;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 10px 0;
   color: #cbd5e1;
   font-size: 0.9rem;
@@ -167,24 +157,74 @@
 }
 
 .legend-circle {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #7dd3fc;
   border: 2px solid #0a0e27;
   flex-shrink: 0;
-  box-shadow: 0 0 6px rgba(125, 211, 252, 0.4);
+  box-shadow: 0 0 8px rgba(125, 211, 252, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: #0a0e27;
+  font-weight: bold;
 }
 
 .legend-circle.head {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  background: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  font-size: 10px;
 }
 
 .legend-line {
   width: 24px;
   height: 2px;
-  background: #334155;
+  background: #475569;
   border-radius: 1px;
   flex-shrink: 0;
+}
+
+/* ============================================
+   CONTROLES (esquina inferior derecha)
+   ============================================ */
+.graph-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 0.85rem;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.control-item kbd {
+  background: #334155;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: 'Monaco', monospace;
+  font-size: 0.75rem;
+  color: #7dd3fc;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  min-width: 80px;
+  text-align: center;
 }

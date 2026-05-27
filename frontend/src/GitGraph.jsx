@@ -30,7 +30,6 @@ function GitGraph({ data }) {
     // PASO 1: Preparar los datos para D3
     // ============================================
 
-    // Los nodos son los commits
     const nodes = data.commits.map(commit => ({
       id: commit.fullHash,
       hash: commit.hash,
@@ -42,8 +41,6 @@ function GitGraph({ data }) {
       isHead: commit.fullHash === data.HEAD.commit
     }))
 
-    // Los links son las conexiones (parent → child)
-    // Cada commit apunta a sus parents
     const links = []
     data.commits.forEach(commit => {
       commit.parents.forEach(parentHash => {
@@ -54,7 +51,6 @@ function GitGraph({ data }) {
       })
     })
 
-    // Mapear commits por hash para búsquedas rápidas
     const commitMap = new Map()
     data.commits.forEach(commit => {
       commitMap.set(commit.fullHash, commit)
@@ -64,72 +60,63 @@ function GitGraph({ data }) {
     // PASO 2: Configurar D3 Force Simulation
     // ============================================
 
-    // Esto calcula automáticamente las posiciones de los nodos
-    // usando fuerzas simuladas (como imanes y resortes)
     const simulation = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(links)
         .id(d => d.id)
-        .distance(140)
+        .distance(160)
         .strength(0.9)
       )
-      .force('charge', d3.forceManyBody().strength(-700))
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.15))
-      .force('collision', d3.forceCollide().radius(55))
+      .force('charge', d3.forceManyBody().strength(-900))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.1))
+      .force('collision', d3.forceCollide().radius(70))
       .alpha(1)
-      .alphaDecay(0.03)
+      .alphaDecay(0.025)
       .alphaMin(0.001)
-      .velocityDecay(0.8)
-
+      .velocityDecay(0.7)
 
     // ============================================
-    // PASO 3: Crear el SVG
+    // PASO 3: Crear el SVG y zoom
     // ============================================
 
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
 
-    // Fondo fijo
-    svg.append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('fill', '#0d1117')
-
     // Rect invisible para capturar eventos de zoom/pan
     const captureRect = svg.append('rect')
       .attr('width', width)
       .attr('height', height)
-      .attr('fill', 'none')
+      .attr('fill', 'transparent')
       .attr('pointer-events', 'all')
 
     // Grupo principal para zoom y pan
     const g = svg.append('g')
 
-    // ============================================
-    // ZOOM Y PAN (Interactividad del canvas)
-    // ============================================
     const zoom = d3.zoom()
-      .scaleExtent([0.5, 5]) // Zoom entre 0.5x y 5x
+      .scaleExtent([0.3, 5])
+      .filter((event) => {
+        // Solo permite zoom/pan en áreas vacías o con la rueda del mouse
+        // Esto evita conflictos con el drag de nodos
+        return !event.button && (event.type === 'wheel' || event.target.tagName === 'rect')
+      })
       .on('zoom', (event) => {
         g.attr('transform', event.transform)
       })
 
-    // Aplica zoom al rect invisible (no al SVG completo)
-    captureRect.call(zoom)
+    svg.call(zoom)
 
-    // Zoom inicial para que todo quepa en pantalla
-    const initialScale = 0.8
-    captureRect.call(zoom.transform, d3.zoomIdentity
+    // Zoom inicial centrado
+    const initialScale = 0.9
+    svg.call(zoom.transform, d3.zoomIdentity
       .translate(width / 2, height / 2)
       .scale(initialScale)
       .translate(-width / 2, -height / 2)
     )
 
-    // Grupo para los links (líneas)
+    // Grupos para organizar elementos
     const linkGroup = g.append('g').attr('class', 'links')
-
-    // Grupo para los nodos (círculos)
     const nodeGroup = g.append('g').attr('class', 'nodes')
+    const labelGroup = g.append('g').attr('class', 'labels')
 
     // ============================================
     // PASO 4: Dibujar los links (líneas)
@@ -139,80 +126,90 @@ function GitGraph({ data }) {
       .data(links)
       .join('line')
       .attr('class', 'link')
-      .attr('stroke', '#30363d')
-      .attr('stroke-width', 2)
-      .attr('opacity', 0.6)
 
     // ============================================
     // PASO 5: Dibujar los nodos (círculos)
     // ============================================
 
+    const NODE_RADIUS = 14
+    const HEAD_RADIUS = 18
+
     const node = nodeGroup.selectAll('circle')
       .data(nodes)
       .join('circle')
-      .attr('r', d => d.isHead ? 13 : 10)
+      .attr('r', d => d.isHead ? HEAD_RADIUS : NODE_RADIUS)
       .attr('class', d => `node ${d.isHead ? 'head' : ''}`)
-      .attr('fill', d => {
-        // Si es HEAD, usa color más brillante
-        if (d.isHead) return d.color
-        return d.color
-      })
-      .attr('stroke', d => d.isHead ? '#0d1117' : '#0d1117')
+      .attr('fill', d => d.color)
+      .attr('stroke', '#0a0e27')
       .attr('stroke-width', d => d.isHead ? 3 : 2)
+      .style('cursor', 'grab')
       .call(drag(simulation))
 
     // ============================================
-    // PASO 6: Agregar labels de texto
+    // PASO 6: Agregar labels DEBAJO de los nodos
     // ============================================
 
-    // Labels de commits (hash)
-    const labels = nodeGroup.selectAll('text.node-label')
+    // Hash del commit (debajo del círculo)
+    const hashLabels = labelGroup.selectAll('text.hash-label')
       .data(nodes)
       .join('text')
-      .attr('class', 'node-label')
+      .attr('class', 'hash-label')
       .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'middle')
-      .attr('font-size', '10px')
-      .attr('font-family', 'Monaco, monospace')
-      .attr('font-weight', 'bold')
-      .attr('fill', '#0d1117')
+      .attr('dominant-baseline', 'hanging')
       .attr('pointer-events', 'none')
-      .text(d => d.hash)
+      .text(d => `📦 ${d.hash}`)
 
-    // Labels de ramas con emojis
-    const branchLabels = nodeGroup.selectAll('text.branch-label')
-      .data(nodes.filter(n => n.branches.length > 0))
+    // Icono dentro del nodo (HEAD tiene estrella, otros punto)
+    const nodeIcons = labelGroup.selectAll('text.node-icon')
+      .data(nodes)
       .join('text')
-      .attr('class', 'branch-label')
-      .attr('text-anchor', 'start')
-      .attr('dominant-baseline', 'middle')
-      .attr('font-size', '12px')
-      .attr('font-family', 'sans-serif')
-      .attr('font-weight', '700')
-      .attr('fill', d => d.color)
+      .attr('class', 'node-icon')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
       .attr('pointer-events', 'none')
-      .text(d => {
-        const emoji = '🌿 ';
-        return emoji + d.branches.join(', ');
+      .attr('font-size', d => d.isHead ? '16px' : '12px')
+      .text(d => d.isHead ? '⭐' : '●')
+      .attr('fill', d => d.isHead ? '#fbbf24' : '#0a0e27')
+
+    // Labels de ramas (ARRIBA del círculo)
+    const branchLabels = labelGroup.selectAll('g.branch-label-group')
+      .data(nodes.filter(n => n.branches.length > 0))
+      .join('g')
+      .attr('class', 'branch-label-group')
+      .attr('pointer-events', 'none')
+
+    branchLabels.each(function(d) {
+      const group = d3.select(this)
+      d.branches.forEach((branchName, i) => {
+        // Background rectangle para legibilidad
+        const text = group.append('text')
+          .attr('class', 'branch-label')
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('fill', d.color)
+          .attr('data-offset', i)
+          .text(`🌿 ${branchName}`)
       })
+    })
 
     // ============================================
-    // PASO 7: Agregar tooltips (información)
+    // PASO 7: Tooltips (información completa)
     // ============================================
 
     node.append('title')
       .text(d => {
-        const commit = commitMap.get(d.id)
-        return `${d.hash}\n${d.message}\nAutor: ${d.author}\n${new Date(d.timestamp * 1000).toLocaleString()}`
+        return `📦 ${d.hash}\n💬 ${d.message}\n👤 ${d.author}\n🕐 ${new Date(d.timestamp * 1000).toLocaleString()}\n${d.branches.length > 0 ? '🌿 ' + d.branches.join(', ') : ''}`
       })
 
     // ============================================
     // PASO 8: Actualizar posiciones en cada tick
     // ============================================
 
-    let tickCount = 0;
+    let tickCount = 0
+    const MAX_TICKS = 300
+
     simulation.on('tick', () => {
-      tickCount++;
+      tickCount++
 
       link
         .attr('x1', d => d.source.x)
@@ -224,17 +221,28 @@ function GitGraph({ data }) {
         .attr('cx', d => d.x)
         .attr('cy', d => d.y)
 
-      labels
+      nodeIcons
         .attr('x', d => d.x)
         .attr('y', d => d.y)
 
-      branchLabels
-        .attr('x', d => d.x + 18)
-        .attr('y', d => d.y - 15)
+      // Hash debajo del nodo
+      hashLabels
+        .attr('x', d => d.x)
+        .attr('y', d => d.y + (d.isHead ? HEAD_RADIUS : NODE_RADIUS) + 8)
 
-      // Detén la simulación después de suficientes ticks
-      if (tickCount > 200) {
-        simulation.stop();
+      // Branch labels arriba del nodo (apilados)
+      branchLabels.attr('transform', d => {
+        const offsetY = d.y - (d.isHead ? HEAD_RADIUS : NODE_RADIUS) - 10
+        return `translate(${d.x}, ${offsetY})`
+      })
+
+      branchLabels.selectAll('text').each(function(_, i, nodes) {
+        const offset = parseInt(d3.select(this).attr('data-offset'))
+        d3.select(this).attr('y', -offset * 16)
+      })
+
+      if (tickCount > MAX_TICKS) {
+        simulation.stop()
       }
     })
 
@@ -244,11 +252,13 @@ function GitGraph({ data }) {
 
     function drag(simulation) {
       function dragstarted(event, d) {
-        if (!event.active) simulation.alphaTarget(0.3).restart()
+        if (!event.active) {
+          // Reactiva la simulación para que el drag funcione
+          tickCount = 0 // Resetea el contador para que no se detenga
+          simulation.alphaTarget(0.3).restart()
+        }
         d.fx = d.x
         d.fy = d.y
-        // Desactiva el zoom mientras se draggea un nodo
-        captureRect.on('.zoom', null)
       }
 
       function dragged(event, d) {
@@ -258,16 +268,20 @@ function GitGraph({ data }) {
 
       function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0)
-        d.fx = null
-        d.fy = null
-        // Reactiva el zoom
-        captureRect.call(zoom)
+        // Deja el nodo donde lo soltaron (fijo)
+        // d.fx = null  // Comentado: el nodo se queda donde lo dejas
+        // d.fy = null
       }
 
       return d3.drag()
         .on('start', dragstarted)
         .on('drag', dragged)
         .on('end', dragended)
+    }
+
+    // Cleanup
+    return () => {
+      simulation.stop()
     }
 
   }, [data])
@@ -278,16 +292,20 @@ function GitGraph({ data }) {
 
       <div className="graph-legend">
         <div className="legend-item">
-          <div className="legend-circle head"></div>
+          <div className="legend-circle head">⭐</div>
           <span>HEAD (commit actual)</span>
         </div>
         <div className="legend-item">
-          <div className="legend-circle"></div>
-          <span>Commits</span>
+          <div className="legend-circle">●</div>
+          <span>📦 Commits</span>
         </div>
         <div className="legend-item">
           <div className="legend-line"></div>
-          <span>Parents (relaciones)</span>
+          <span>↔️ Parents (relaciones)</span>
+        </div>
+        <div className="legend-item">
+          <span style={{fontSize: '14px'}}>🌿</span>
+          <span>Branches</span>
         </div>
       </div>
 
@@ -296,10 +314,10 @@ function GitGraph({ data }) {
           <kbd>🖱️ Rueda</kbd> Zoom
         </div>
         <div className="control-item">
-          <kbd>Drag</kbd> Desplazar
+          <kbd>✋ Drag</kbd> Desplazar canvas
         </div>
         <div className="control-item">
-          <kbd>Nodo</kbd> Arrastrar
+          <kbd>👆 Nodo</kbd> Arrastrar commit
         </div>
       </div>
     </div>
