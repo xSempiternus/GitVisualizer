@@ -75,10 +75,11 @@ function GitGraph({ data }) {
       .force('charge', d3.forceManyBody().strength(-700))
       .force('center', d3.forceCenter(width / 2, height / 2).strength(0.15))
       .force('collision', d3.forceCollide().radius(55))
-      .alpha(0.8)
-      .alphaDecay(0.0015)
-      .alphaMin(0.0001)
-      .velocityDecay(0.6)
+      .alpha(1)
+      .alphaDecay(0.03)
+      .alphaMin(0.001)
+      .velocityDecay(0.8)
+
 
     // ============================================
     // PASO 3: Crear el SVG
@@ -209,7 +210,10 @@ function GitGraph({ data }) {
     // PASO 8: Actualizar posiciones en cada tick
     // ============================================
 
+    let tickCount = 0;
     simulation.on('tick', () => {
+      tickCount++;
+
       link
         .attr('x1', d => d.source.x)
         .attr('y1', d => d.source.y)
@@ -227,6 +231,11 @@ function GitGraph({ data }) {
       branchLabels
         .attr('x', d => d.x + 18)
         .attr('y', d => d.y - 15)
+
+      // Detén la simulación después de suficientes ticks
+      if (tickCount > 200) {
+        simulation.stop();
+      }
     })
 
     // ============================================

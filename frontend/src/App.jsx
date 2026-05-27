@@ -8,7 +8,7 @@ function App() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Fetch datos del backend cada 2 segundos
+    // Fetch datos del backend solo una vez al cargar
     const fetchData = async () => {
       try {
         const response = await fetch('/api/git-data')
@@ -23,7 +23,8 @@ function App() {
     }
 
     fetchData()
-    const interval = setInterval(fetchData, 2000)
+    // Solo refetch cada 10 segundos si ha habido cambios en git
+    const interval = setInterval(fetchData, 10000)
     return () => clearInterval(interval)
   }, [])
 
