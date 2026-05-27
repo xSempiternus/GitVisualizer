@@ -187,6 +187,44 @@
 }
 
 /* ============================================
+   BOTÓN RESET (esquina superior derecha del canvas)
+   ============================================ */
+.reset-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #7dd3fc;
+  cursor: pointer;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(125, 211, 252, 0.1);
+  transition: all 0.2s ease;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+}
+
+.reset-button:hover {
+  background: rgba(30, 41, 59, 0.95);
+  color: #e0f2fe;
+  border-color: #7dd3fc;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 25px rgba(125, 211, 252, 0.3);
+  transform: translateY(-2px);
+}
+
+.reset-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
    CONTROLES (esquina inferior derecha)
    ============================================ */
 .graph-controls {

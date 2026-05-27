@@ -1,23 +1,53 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import './GitGraph.css'
 
 /**
  * GitGraph: Visualiza el árbol de commits con D3.js
  *
- * ¿Cómo funciona?
- * 1. Crea un "force simulation" (fuerzas que repelen/atraen nodos)
- * 2. Los commits son nodos conectados por sus parents
- * 3. D3 calcula posiciones automáticamente para que no se crucen
- * 4. Dibuja líneas (edges) entre commits y los commits como círculos (nodos)
+ * Cómo preserva posiciones:
+ * 1. Las posiciones de cada nodo se guardan en un ref (positionsRef)
+ * 2. Solo re-renderiza cuando los datos realmente cambian (nuevos commits)
+ * 3. Al re-renderizar, restaura las posiciones guardadas
+ * 4. Botón "Reset Layout" recalcula desde cero
  */
 
 function GitGraph({ data }) {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
 
+  // Guarda las posiciones manuales de los nodos (persisten entre renders)
+  const positionsRef = useRef(new Map())
+
+  // Guarda el hash de los datos para detectar cambios reales
+  const dataSignatureRef = useRef(null)
+
+  // Trigger para forzar reset
+  const [resetKey, setResetKey] = useState(0)
+
+  // Genera una "firma" de los datos para comparar
+  const getDataSignature = (data) => {
+    if (!data || !data.commits) return ''
+    return data.commits.map(c => c.fullHash).sort().join(',') +
+           '|' + data.branches.map(b => `${b.name}:${b.fullHead}`).join(',')
+  }
+
   useEffect(() => {
     if (!data || !data.commits || data.commits.length === 0) return
+
+    const newSignature = getDataSignature(data)
+
+    // Si los datos son los mismos Y no es un reset, no re-renderizar
+    if (newSignature === dataSignatureRef.current && resetKey === 0) {
+      return
+    }
+
+    // Si es un reset, limpia las posiciones guardadas
+    if (resetKey > 0) {
+      positionsRef.current.clear()
+    }
+
+    dataSignatureRef.current = newSignature
 
     const container = containerRef.current
     const width = container.clientWidth
@@ -27,19 +57,32 @@ function GitGraph({ data }) {
     d3.select(svgRef.current).selectAll('*').remove()
 
     // ============================================
-    // PASO 1: Preparar los datos para D3
+    // PASO 1: Preparar nodos con posiciones guardadas
     // ============================================
 
-    const nodes = data.commits.map(commit => ({
-      id: commit.fullHash,
-      hash: commit.hash,
-      message: commit.message,
-      author: commit.author,
-      timestamp: commit.timestamp,
-      branches: commit.branches || [],
-      color: commit.color || '#58a6ff',
-      isHead: commit.fullHash === data.HEAD.commit
-    }))
+    const nodes = data.commits.map(commit => {
+      const node = {
+        id: commit.fullHash,
+        hash: commit.hash,
+        message: commit.message,
+        author: commit.author,
+        timestamp: commit.timestamp,
+        branches: commit.branches || [],
+        color: commit.color || '#58a6ff',
+        isHead: commit.fullHash === data.HEAD.commit
+      }
+
+      // Restaura posición guardada si existe
+      const savedPos = positionsRef.current.get(commit.fullHash)
+      if (savedPos) {
+        node.x = savedPos.x
+        node.y = savedPos.y
+        node.fx = savedPos.fx
+        node.fy = savedPos.fy
+      }
+
+      return node
+    })
 
     const links = []
     data.commits.forEach(commit => {
@@ -57,7 +100,7 @@ function GitGraph({ data }) {
     })
 
     // ============================================
-    // PASO 2: Configurar D3 Force Simulation
+    // PASO 2: Force Simulation
     // ============================================
 
     const simulation = d3.forceSimulation(nodes)
@@ -75,28 +118,24 @@ function GitGraph({ data }) {
       .velocityDecay(0.7)
 
     // ============================================
-    // PASO 3: Crear el SVG y zoom
+    // PASO 3: SVG y Zoom
     // ============================================
 
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
 
-    // Rect invisible para capturar eventos de zoom/pan
     const captureRect = svg.append('rect')
       .attr('width', width)
       .attr('height', height)
       .attr('fill', 'transparent')
       .attr('pointer-events', 'all')
 
-    // Grupo principal para zoom y pan
     const g = svg.append('g')
 
     const zoom = d3.zoom()
       .scaleExtent([0.3, 5])
       .filter((event) => {
-        // Solo permite zoom/pan en áreas vacías o con la rueda del mouse
-        // Esto evita conflictos con el drag de nodos
         return !event.button && (event.type === 'wheel' || event.target.tagName === 'rect')
       })
       .on('zoom', (event) => {
@@ -105,7 +144,6 @@ function GitGraph({ data }) {
 
     svg.call(zoom)
 
-    // Zoom inicial centrado
     const initialScale = 0.9
     svg.call(zoom.transform, d3.zoomIdentity
       .translate(width / 2, height / 2)
@@ -113,13 +151,12 @@ function GitGraph({ data }) {
       .translate(-width / 2, -height / 2)
     )
 
-    // Grupos para organizar elementos
     const linkGroup = g.append('g').attr('class', 'links')
     const nodeGroup = g.append('g').attr('class', 'nodes')
     const labelGroup = g.append('g').attr('class', 'labels')
 
     // ============================================
-    // PASO 4: Dibujar los links (líneas)
+    // PASO 4: Links
     // ============================================
 
     const link = linkGroup.selectAll('line')
@@ -128,7 +165,7 @@ function GitGraph({ data }) {
       .attr('class', 'link')
 
     // ============================================
-    // PASO 5: Dibujar los nodos (círculos)
+    // PASO 5: Nodos
     // ============================================
 
     const NODE_RADIUS = 14
@@ -146,10 +183,9 @@ function GitGraph({ data }) {
       .call(drag(simulation))
 
     // ============================================
-    // PASO 6: Agregar labels DEBAJO de los nodos
+    // PASO 6: Labels
     // ============================================
 
-    // Hash del commit (debajo del círculo)
     const hashLabels = labelGroup.selectAll('text.hash-label')
       .data(nodes)
       .join('text')
@@ -159,7 +195,6 @@ function GitGraph({ data }) {
       .attr('pointer-events', 'none')
       .text(d => `📦 ${d.hash}`)
 
-    // Icono dentro del nodo (HEAD tiene estrella, otros punto)
     const nodeIcons = labelGroup.selectAll('text.node-icon')
       .data(nodes)
       .join('text')
@@ -171,7 +206,6 @@ function GitGraph({ data }) {
       .text(d => d.isHead ? '⭐' : '●')
       .attr('fill', d => d.isHead ? '#fbbf24' : '#0a0e27')
 
-    // Labels de ramas (ARRIBA del círculo)
     const branchLabels = labelGroup.selectAll('g.branch-label-group')
       .data(nodes.filter(n => n.branches.length > 0))
       .join('g')
@@ -181,8 +215,7 @@ function GitGraph({ data }) {
     branchLabels.each(function(d) {
       const group = d3.select(this)
       d.branches.forEach((branchName, i) => {
-        // Background rectangle para legibilidad
-        const text = group.append('text')
+        group.append('text')
           .attr('class', 'branch-label')
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'middle')
@@ -192,17 +225,13 @@ function GitGraph({ data }) {
       })
     })
 
-    // ============================================
-    // PASO 7: Tooltips (información completa)
-    // ============================================
-
     node.append('title')
       .text(d => {
         return `📦 ${d.hash}\n💬 ${d.message}\n👤 ${d.author}\n🕐 ${new Date(d.timestamp * 1000).toLocaleString()}\n${d.branches.length > 0 ? '🌿 ' + d.branches.join(', ') : ''}`
       })
 
     // ============================================
-    // PASO 8: Actualizar posiciones en cada tick
+    // PASO 7: Tick - actualizar posiciones
     // ============================================
 
     let tickCount = 0
@@ -225,36 +254,42 @@ function GitGraph({ data }) {
         .attr('x', d => d.x)
         .attr('y', d => d.y)
 
-      // Hash debajo del nodo
       hashLabels
         .attr('x', d => d.x)
         .attr('y', d => d.y + (d.isHead ? HEAD_RADIUS : NODE_RADIUS) + 8)
 
-      // Branch labels arriba del nodo (apilados)
       branchLabels.attr('transform', d => {
         const offsetY = d.y - (d.isHead ? HEAD_RADIUS : NODE_RADIUS) - 10
         return `translate(${d.x}, ${offsetY})`
       })
 
-      branchLabels.selectAll('text').each(function(_, i, nodes) {
+      branchLabels.selectAll('text').each(function() {
         const offset = parseInt(d3.select(this).attr('data-offset'))
         d3.select(this).attr('y', -offset * 16)
       })
 
       if (tickCount > MAX_TICKS) {
+        // Guarda las posiciones finales cuando la simulación se detiene
+        nodes.forEach(n => {
+          positionsRef.current.set(n.id, {
+            x: n.x,
+            y: n.y,
+            fx: n.fx,
+            fy: n.fy
+          })
+        })
         simulation.stop()
       }
     })
 
     // ============================================
-    // PASO 9: Interactividad (drag de nodos)
+    // PASO 8: Drag
     // ============================================
 
     function drag(simulation) {
       function dragstarted(event, d) {
         if (!event.active) {
-          // Reactiva la simulación para que el drag funcione
-          tickCount = 0 // Resetea el contador para que no se detenga
+          tickCount = 0
           simulation.alphaTarget(0.3).restart()
         }
         d.fx = d.x
@@ -268,9 +303,16 @@ function GitGraph({ data }) {
 
       function dragended(event, d) {
         if (!event.active) simulation.alphaTarget(0)
-        // Deja el nodo donde lo soltaron (fijo)
-        // d.fx = null  // Comentado: el nodo se queda donde lo dejas
-        // d.fy = null
+        // FIJA el nodo en su nueva posición (no vuelve a moverse)
+        // d.fx y d.fy mantienen el valor, congelando el nodo
+
+        // Guarda la posición inmediatamente
+        positionsRef.current.set(d.id, {
+          x: d.x,
+          y: d.y,
+          fx: d.fx,
+          fy: d.fy
+        })
       }
 
       return d3.drag()
@@ -279,16 +321,36 @@ function GitGraph({ data }) {
         .on('end', dragended)
     }
 
-    // Cleanup
     return () => {
+      // Guarda posiciones antes de desmontar
+      nodes.forEach(n => {
+        if (n.x !== undefined && n.y !== undefined) {
+          positionsRef.current.set(n.id, {
+            x: n.x,
+            y: n.y,
+            fx: n.fx,
+            fy: n.fy
+          })
+        }
+      })
       simulation.stop()
     }
 
-  }, [data])
+  }, [data, resetKey])
+
+  const handleReset = () => {
+    positionsRef.current.clear()
+    dataSignatureRef.current = null
+    setResetKey(prev => prev + 1)
+  }
 
   return (
     <div className="git-graph-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
+
+      <button className="reset-button" onClick={handleReset} title="Reorganizar layout automáticamente">
+        🔄 Reset Layout
+      </button>
 
       <div className="graph-legend">
         <div className="legend-item">
