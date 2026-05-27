@@ -256,12 +256,18 @@
 }
 
 /* ============================================
-   BOTÓN RESET (esquina superior derecha del canvas)
+   BOTONES DEL CANVAS (esquina superior derecha)
    ============================================ */
-.reset-button {
+.canvas-actions {
   position: absolute;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.canvas-button {
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid #1e293b;
   border-radius: 6px;
@@ -272,21 +278,28 @@
   cursor: pointer;
   backdrop-filter: blur(10px);
   transition: all 0.15s ease;
-  z-index: 10;
   display: flex;
   align-items: center;
   gap: 6px;
   font-family: inherit;
 }
 
-.reset-button:hover {
+.canvas-button:hover {
   background: rgba(30, 41, 59, 0.95);
   color: #f1f5f9;
   border-color: #38bdf8;
 }
 
-.reset-button:active {
+.canvas-button:active {
   background: rgba(15, 23, 42, 1);
+}
+
+/* ============================================
+   PARTÍCULAS (electrones fluyendo)
+   ============================================ */
+.particle {
+  pointer-events: none;
+  opacity: 0.9;
 }
 
 /* ============================================

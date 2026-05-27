@@ -51,7 +51,14 @@ function GitGraph({ data, branches }) {
   const dataSignatureRef = useRef(null)
   const prevResetKeyRef = useRef(0)
 
+  // Refs para la animación (persistentes a través de renders)
+  const animationFrameRef = useRef(null)
+  const isAnimatingRef = useRef(true)
+  const particlesRef = useRef([])
+  const particleNodesRef = useRef(null)
+
   const [resetKey, setResetKey] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
 
   const getDataSignature = (data) => {
     if (!data || !data.commits) return ''
@@ -378,6 +385,7 @@ function GitGraph({ data, branches }) {
       .attr('stroke-width', d => d.isMainBranch ? 4 : 2.5)
       .attr('fill', 'none')
       .attr('opacity', d => d.isMainBranch ? 0.9 : 0.6)
+      .attr('id', (d, i) => `link-${i}`)
       .attr('d', d => {
         // Si están en el mismo lane, línea recta
         if (d.source.x === d.target.x) {
@@ -388,6 +396,64 @@ function GitGraph({ data, branches }) {
         return `M ${d.source.x} ${d.source.y}
                 C ${d.source.x} ${midY}, ${d.target.x} ${midY}, ${d.target.x} ${d.target.y}`
       })
+
+    // ============================================
+    // PASO 4.5: PARTÍCULAS (electrones fluyendo)
+    // ============================================
+
+    const particlesGroup = g.append('g').attr('class', 'particles')
+
+    // Calcular partículas por link
+    // Más partículas en links largos para que se vea continuo
+    const PARTICLES_PER_LINK = 3
+    const PARTICLE_SPEED = 0.003 // velocidad (avance por frame)
+
+    const particles = []
+    link.each(function(d, i) {
+      const pathEl = this
+      const length = pathEl.getTotalLength()
+
+      for (let p = 0; p < PARTICLES_PER_LINK; p++) {
+        particles.push({
+          linkData: d,
+          pathEl: pathEl,
+          length: length,
+          // Offset inicial distribuido para que estén espaciadas
+          offset: p / PARTICLES_PER_LINK,
+          color: d.color
+        })
+      }
+    })
+
+    // Crear el círculo SVG por cada partícula
+    const particleNodes = particlesGroup.selectAll('circle.particle')
+      .data(particles)
+      .join('circle')
+      .attr('class', 'particle')
+      .attr('r', d => d.linkData.isMainBranch ? 3.5 : 2.5)
+      .attr('fill', d => d.color)
+      .attr('filter', 'url(#particle-glow)')
+
+    // Guardar referencias para el animation loop persistente
+    particlesRef.current = particles
+    particleNodesRef.current = particleNodes
+
+    // SVG filter para el glow effect (definido una sola vez)
+    const defs = svg.append('defs')
+    const filter = defs.append('filter')
+      .attr('id', 'particle-glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%')
+
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '2')
+      .attr('result', 'coloredBlur')
+
+    const feMerge = filter.append('feMerge')
+    feMerge.append('feMergeNode').attr('in', 'coloredBlur')
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
     // ============================================
     // PASO 5: Nodos
@@ -583,10 +649,15 @@ function GitGraph({ data, branches }) {
         return `M ${d.source.x} ${d.source.y}
                 C ${d.source.x} ${midY}, ${d.target.x} ${midY}, ${d.target.x} ${d.target.y}`
       })
+
+      // Recalcular longitudes de paths para las partículas
+      particles.forEach(p => {
+        p.length = p.pathEl.getTotalLength()
+      })
     }
 
     return () => {
-      // Guarda posiciones al desmontar
+      // Guarda posiciones al desmontar (NO detiene animación)
       nodes.forEach(n => {
         if (n.fx !== undefined && n.fy !== undefined) {
           positionsRef.current.set(n.id, {
@@ -601,10 +672,50 @@ function GitGraph({ data, branches }) {
 
   }, [data, resetKey])
 
+  // ============================================
+  // Animation loop persistente (NO depende de data)
+  // ============================================
+  useEffect(() => {
+    const PARTICLE_SPEED = 0.004 // velocidad de partículas
+
+    function animate() {
+      if (isAnimatingRef.current && particleNodesRef.current && particlesRef.current.length > 0) {
+        try {
+          particleNodesRef.current.attr('transform', function(d) {
+            d.offset += PARTICLE_SPEED
+            if (d.offset > 1) d.offset = 0
+
+            // Calcular posición en el path (invertido: del padre al hijo)
+            const length = d.pathEl.getTotalLength ? d.pathEl.getTotalLength() : d.length
+            const point = d.pathEl.getPointAtLength((1 - d.offset) * length)
+            return `translate(${point.x}, ${point.y})`
+          })
+        } catch (e) {
+          // Path puede no estar disponible momentáneamente durante re-render
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, []) // Solo se ejecuta una vez al montar
+
   const handleReset = () => {
     positionsRef.current.clear()
     dataSignatureRef.current = null
     setResetKey(prev => prev + 1)
+  }
+
+  const handleToggleAnimation = () => {
+    isAnimatingRef.current = !isAnimatingRef.current
+    setIsPlaying(isAnimatingRef.current)
   }
 
   return (
@@ -613,9 +724,22 @@ function GitGraph({ data, branches }) {
 
       <Glossary branches={branches} />
 
-      <button className="reset-button" onClick={handleReset} title="Reorganizar layout automáticamente">
-        Reset Layout
-      </button>
+      <div className="canvas-actions">
+        <button
+          className="canvas-button"
+          onClick={handleToggleAnimation}
+          title={isPlaying ? "Pausar animación de partículas" : "Reanudar animación"}
+        >
+          {isPlaying ? '⏸ Pause' : '▶ Play'}
+        </button>
+        <button
+          className="canvas-button"
+          onClick={handleReset}
+          title="Reorganizar layout automáticamente"
+        >
+          Reset Layout
+        </button>
+      </div>
 
       <div className="graph-legend">
         <div className="legend-item">
