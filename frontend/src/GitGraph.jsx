@@ -51,7 +51,12 @@ function GitGraph({ data, branches }) {
   const dataSignatureRef = useRef(null)
   const prevResetKeyRef = useRef(0)
 
+  // Refs para la animación
+  const animationFrameRef = useRef(null)
+  const isAnimatingRef = useRef(true)
+
   const [resetKey, setResetKey] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(true)
 
   const getDataSignature = (data) => {
     if (!data || !data.commits) return ''
@@ -378,6 +383,7 @@ function GitGraph({ data, branches }) {
       .attr('stroke-width', d => d.isMainBranch ? 4 : 2.5)
       .attr('fill', 'none')
       .attr('opacity', d => d.isMainBranch ? 0.9 : 0.6)
+      .attr('id', (d, i) => `link-${i}`)
       .attr('d', d => {
         // Si están en el mismo lane, línea recta
         if (d.source.x === d.target.x) {
@@ -388,6 +394,60 @@ function GitGraph({ data, branches }) {
         return `M ${d.source.x} ${d.source.y}
                 C ${d.source.x} ${midY}, ${d.target.x} ${midY}, ${d.target.x} ${d.target.y}`
       })
+
+    // ============================================
+    // PASO 4.5: PARTÍCULAS (electrones fluyendo)
+    // ============================================
+
+    const particlesGroup = g.append('g').attr('class', 'particles')
+
+    // Calcular partículas por link
+    // Más partículas en links largos para que se vea continuo
+    const PARTICLES_PER_LINK = 3
+    const PARTICLE_SPEED = 0.003 // velocidad (avance por frame)
+
+    const particles = []
+    link.each(function(d, i) {
+      const pathEl = this
+      const length = pathEl.getTotalLength()
+
+      for (let p = 0; p < PARTICLES_PER_LINK; p++) {
+        particles.push({
+          linkData: d,
+          pathEl: pathEl,
+          length: length,
+          // Offset inicial distribuido para que estén espaciadas
+          offset: p / PARTICLES_PER_LINK,
+          color: d.color
+        })
+      }
+    })
+
+    // Crear el círculo SVG por cada partícula
+    const particleNodes = particlesGroup.selectAll('circle.particle')
+      .data(particles)
+      .join('circle')
+      .attr('class', 'particle')
+      .attr('r', d => d.linkData.isMainBranch ? 3.5 : 2.5)
+      .attr('fill', d => d.color)
+      .attr('filter', 'url(#particle-glow)')
+
+    // SVG filter para el glow effect (definido una sola vez)
+    const defs = svg.append('defs')
+    const filter = defs.append('filter')
+      .attr('id', 'particle-glow')
+      .attr('x', '-50%')
+      .attr('y', '-50%')
+      .attr('width', '200%')
+      .attr('height', '200%')
+
+    filter.append('feGaussianBlur')
+      .attr('stdDeviation', '2')
+      .attr('result', 'coloredBlur')
+
+    const feMerge = filter.append('feMerge')
+    feMerge.append('feMergeNode').attr('in', 'coloredBlur')
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
     // ============================================
     // PASO 5: Nodos
@@ -583,9 +643,50 @@ function GitGraph({ data, branches }) {
         return `M ${d.source.x} ${d.source.y}
                 C ${d.source.x} ${midY}, ${d.target.x} ${midY}, ${d.target.x} ${d.target.y}`
       })
+
+      // Recalcular longitudes de paths para las partículas
+      particles.forEach(p => {
+        p.length = p.pathEl.getTotalLength()
+      })
     }
 
+    // ============================================
+    // PASO 8: LOOP DE ANIMACIÓN (electrones)
+    // ============================================
+
+    function animate() {
+      if (!isAnimatingRef.current) {
+        // Pausado - aún así seguir pidiendo frames para detectar cuando se reanuda
+        animationFrameRef.current = requestAnimationFrame(animate)
+        return
+      }
+
+      // Actualizar posición de cada partícula
+      particleNodes.attr('transform', function(d) {
+        // Avanzar el offset
+        d.offset += PARTICLE_SPEED
+        if (d.offset > 1) d.offset = 0
+
+        // Calcular posición en el path
+        // Las partículas van del padre (más viejo, más abajo) al hijo (más nuevo, más arriba)
+        // Pero el path va de source (hijo) a target (padre)
+        // Entonces invertimos: 1 - offset
+        const point = d.pathEl.getPointAtLength((1 - d.offset) * d.length)
+        return `translate(${point.x}, ${point.y})`
+      })
+
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+
+    // Iniciar el loop
+    animationFrameRef.current = requestAnimationFrame(animate)
+
     return () => {
+      // Detener animación
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+
       // Guarda posiciones al desmontar
       nodes.forEach(n => {
         if (n.fx !== undefined && n.fy !== undefined) {
@@ -607,15 +708,33 @@ function GitGraph({ data, branches }) {
     setResetKey(prev => prev + 1)
   }
 
+  const handleToggleAnimation = () => {
+    isAnimatingRef.current = !isAnimatingRef.current
+    setIsPlaying(isAnimatingRef.current)
+  }
+
   return (
     <div className="git-graph-container" ref={containerRef}>
       <svg ref={svgRef}></svg>
 
       <Glossary branches={branches} />
 
-      <button className="reset-button" onClick={handleReset} title="Reorganizar layout automáticamente">
-        Reset Layout
-      </button>
+      <div className="canvas-actions">
+        <button
+          className="canvas-button"
+          onClick={handleToggleAnimation}
+          title={isPlaying ? "Pausar animación de partículas" : "Reanudar animación"}
+        >
+          {isPlaying ? '⏸ Pause' : '▶ Play'}
+        </button>
+        <button
+          className="canvas-button"
+          onClick={handleReset}
+          title="Reorganizar layout automáticamente"
+        >
+          Reset Layout
+        </button>
+      </div>
 
       <div className="graph-legend">
         <div className="legend-item">
