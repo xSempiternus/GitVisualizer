@@ -69,15 +69,16 @@ function GitGraph({ data }) {
     const simulation = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(links)
         .id(d => d.id)
-        .distance(100)
-        .strength(0.8)
+        .distance(140)
+        .strength(0.9)
       )
-      .force('charge', d3.forceManyBody().strength(-500)) // Repulsión entre nodos
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.3))
-      .force('collision', d3.forceCollide().radius(45)) // Evita que se solapen
-      .alpha(1) // Reinicia la simulación
-      .alphaDecay(0.008) // Desaceleración más rápida
-      .velocityDecay(0.4) // Más fricción para que se estabilice
+      .force('charge', d3.forceManyBody().strength(-700))
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.15))
+      .force('collision', d3.forceCollide().radius(55))
+      .alpha(0.8)
+      .alphaDecay(0.0015)
+      .alphaMin(0.0001)
+      .velocityDecay(0.6)
 
     // ============================================
     // PASO 3: Crear el SVG
@@ -177,19 +178,22 @@ function GitGraph({ data }) {
       .attr('pointer-events', 'none')
       .text(d => d.hash)
 
-    // Labels de ramas (si el commit es head de una rama)
+    // Labels de ramas con emojis
     const branchLabels = nodeGroup.selectAll('text.branch-label')
       .data(nodes.filter(n => n.branches.length > 0))
       .join('text')
       .attr('class', 'branch-label')
       .attr('text-anchor', 'start')
       .attr('dominant-baseline', 'middle')
-      .attr('font-size', '11px')
+      .attr('font-size', '12px')
       .attr('font-family', 'sans-serif')
-      .attr('font-weight', '600')
+      .attr('font-weight', '700')
       .attr('fill', d => d.color)
       .attr('pointer-events', 'none')
-      .text(d => d.branches.join(', '))
+      .text(d => {
+        const emoji = '🌿 ';
+        return emoji + d.branches.join(', ');
+      })
 
     // ============================================
     // PASO 7: Agregar tooltips (información)

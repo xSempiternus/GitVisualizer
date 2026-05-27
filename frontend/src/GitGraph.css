@@ -1,45 +1,70 @@
 .git-graph-container {
   flex: 1;
   position: relative;
-  background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1220 100%);
   overflow: hidden;
   width: 100%;
   height: 100%;
+}
+
+.git-graph-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(88, 166, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(63, 185, 80, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .git-graph-container svg {
   display: block;
   width: 100%;
   height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .link {
-  stroke: #30363d;
-  stroke-width: 2.5;
-  opacity: 0.7;
+  stroke: #334155;
+  stroke-width: 2;
+  opacity: 0.5;
   pointer-events: none;
-  transition: stroke 0.3s;
+  transition: all 0.3s ease;
 }
 
 .link:hover {
-  stroke: #58a6ff;
-  opacity: 1;
-  stroke-width: 3;
+  stroke: #7dd3fc;
+  opacity: 0.9;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.4));
 }
 
 .node {
   cursor: grab;
-  filter: drop-shadow(0 0 6px rgba(88, 166, 255, 0.4));
-  transition: all 0.2s;
-  stroke: #0d1117;
+  filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.3));
+  transition: all 0.2s ease;
+  stroke: #0a0e27;
   stroke-width: 2;
 }
 
 .node:hover {
-  r: 15px;
-  filter: drop-shadow(0 0 12px rgba(88, 166, 255, 0.9));
-  cursor: pointer;
+  filter: drop-shadow(0 0 16px rgba(125, 211, 252, 0.8));
+  cursor: grab;
   stroke-width: 3;
+}
+
+.node.head {
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.6));
+  stroke-width: 3;
+}
+
+.node.head:hover {
+  filter: drop-shadow(0 0 20px rgba(34, 197, 94, 1));
 }
 
 .node-label {
@@ -52,12 +77,13 @@
 }
 
 .branch-label {
-  font-size: 11px;
+  font-size: 12px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   pointer-events: none;
   user-select: none;
-  font-weight: 600;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+  font-weight: 700;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  letter-spacing: 0.3px;
 }
 
 .node:active {
@@ -68,35 +94,37 @@
   position: absolute;
   bottom: 20px;
   right: 20px;
-  background: rgba(22, 27, 34, 0.95);
-  border: 1px solid #30363d;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #1e293b;
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 16px 20px;
   font-size: 0.85rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .control-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #8b949e;
+  gap: 10px;
+  color: #cbd5e1;
   font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .control-item kbd {
-  background: #30363d;
-  border: 1px solid #21262d;
-  border-radius: 4px;
-  padding: 2px 6px;
+  background: #334155;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 4px 8px;
   font-family: 'Monaco', monospace;
   font-size: 0.75rem;
-  color: #79c0ff;
-  font-weight: 600;
+  color: #7dd3fc;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .node.head {
@@ -111,22 +139,23 @@
   position: absolute;
   bottom: 20px;
   left: 20px;
-  background: rgba(22, 27, 34, 0.95);
-  border: 1px solid #30363d;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #1e293b;
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 16px 20px;
   font-size: 0.85rem;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(125, 211, 252, 0.05);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 8px 0;
-  color: #8b949e;
+  margin: 10px 0;
+  color: #cbd5e1;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .legend-item:first-child {
@@ -141,19 +170,21 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #58a6ff;
-  border: 2px solid #0d1117;
+  background: #7dd3fc;
+  border: 2px solid #0a0e27;
   flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(125, 211, 252, 0.4);
 }
 
 .legend-circle.head {
-  background: #3fb950;
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
 }
 
 .legend-line {
   width: 24px;
-  height: 2.5px;
-  background: #30363d;
-  border-radius: 2px;
+  height: 2px;
+  background: #334155;
+  border-radius: 1px;
   flex-shrink: 0;
 }

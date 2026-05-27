@@ -34,13 +34,13 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>📊 Git Visualizer</h1>
+        <h1>🌳 Git Visualizer</h1>
         <div className="info">
-          <span>{data.commits.length} commits</span>
+          <span>📦 {data.commits.length} commits</span>
           <span>·</span>
-          <span>{data.branches.length} branches</span>
+          <span>🌿 {data.branches.length} branches</span>
           <span>·</span>
-          <span>HEAD: <strong>{data.HEAD.branch}</strong></span>
+          <span>✨ <strong>{data.HEAD.branch}</strong></span>
         </div>
       </header>
 
