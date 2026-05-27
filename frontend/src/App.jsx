@@ -59,11 +59,12 @@ function App() {
       </header>
 
       <div className="app-main">
-        <GitGraph data={data} branches={data.branches} />
+        <div className="canvas-wrapper">
+          <SmartSuggestions onActionExecuted={fetchData} />
+          <GitGraph data={data} branches={data.branches} />
+        </div>
 
         <aside className="sidebar">
-          <SmartSuggestions onActionExecuted={fetchData} />
-
           <section className="sidebar-section">
             <h3>Branches</h3>
             <ul className="branch-list">
