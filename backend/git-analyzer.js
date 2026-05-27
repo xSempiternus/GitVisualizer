@@ -86,7 +86,12 @@ class GitAnalyzer {
   }
 
   /**
-   * Analiza el estado y genera sugerencias inteligentes
+   * Analiza el estado y genera sugerencias inteligentes en orden de flujo Git:
+   *
+   * Flujo natural: edit → stage → commit → push → merge → cleanup
+   *
+   * Solo muestra el SIGUIENTE paso que tiene sentido. Si hay cambios sin commit,
+   * NO sugerimos push (push primero requiere commit).
    */
   getSuggestions() {
     const status = this.getStatus()
@@ -94,19 +99,25 @@ class GitAnalyzer {
 
     const suggestions = []
 
-    // 1. Cambios sin commitear (alta prioridad)
+    // ============================================
+    // PASO 1: ¿Hay cambios pendientes? → COMMIT FIRST
+    // ============================================
     const totalChanges = status.untracked.length + status.modified.length
-    if (totalChanges > 0) {
+    const stagedRaw = this.exec('diff --cached --name-only') || ''
+    const staged = stagedRaw.split('\n').filter(Boolean)
+
+    if (totalChanges > 0 && staged.length === 0) {
+      // Hay cambios pero NADA staged → sugerir stage
       suggestions.push({
-        id: 'commit-changes',
+        id: 'stage-changes',
         priority: 'high',
-        icon: '💾',
-        title: `${totalChanges} ${totalChanges === 1 ? 'cambio' : 'cambios'} sin commitear`,
-        description: `Tienes ${status.modified.length} archivos modificados y ${status.untracked.length} sin trackear`,
+        icon: '📥',
+        title: `Paso 1: Stage ${totalChanges} ${totalChanges === 1 ? 'cambio' : 'cambios'}`,
+        description: `Tienes archivos modificados/nuevos. Primero hay que prepararlos para commit (staging).`,
         actions: [
           {
             id: 'stage-all',
-            label: 'Stage all changes',
+            label: 'git add .',
             command: 'git add .',
             type: 'stage'
           }
@@ -118,20 +129,45 @@ class GitAnalyzer {
       })
     }
 
-    // 2. Commits sin push
-    if (status.ahead > 0) {
+    if (staged.length > 0) {
+      // Hay archivos staged → sugerir commit
+      suggestions.push({
+        id: 'commit-staged',
+        priority: 'high',
+        icon: '💾',
+        title: `Paso 2: Commit ${staged.length} ${staged.length === 1 ? 'archivo' : 'archivos'} staged`,
+        description: 'Tienes archivos listos para commit. Crea un commit descriptivo con los cambios.',
+        actions: [
+          {
+            id: 'commit-quick',
+            label: 'Quick commit (WIP)',
+            command: `git commit -m "wip: work in progress"`,
+            type: 'commit'
+          }
+        ],
+        details: {
+          staged: staged.slice(0, 5)
+        }
+      })
+    }
+
+    // ============================================
+    // PASO 2: ¿Hay commits sin push? → PUSH
+    // Solo si NO hay cambios pendientes (commit primero)
+    // ============================================
+    if (totalChanges === 0 && status.ahead > 0) {
       suggestions.push({
         id: 'push-commits',
         priority: status.ahead >= 5 ? 'high' : 'medium',
         icon: '🚀',
-        title: `${status.ahead} ${status.ahead === 1 ? 'commit' : 'commits'} sin push`,
+        title: `Paso 3: Push ${status.ahead} ${status.ahead === 1 ? 'commit' : 'commits'} a GitHub`,
         description: status.ahead >= 5
-          ? 'Tienes muchos commits acumulados localmente. Push pronto para evitar perder trabajo.'
-          : `Push tus cambios a ${status.remoteBranch || 'origin'}`,
+          ? '⚠️ Muchos commits acumulados. Push para no perder trabajo.'
+          : `Sube tus commits a ${status.remoteBranch || 'origin'} para respaldarlos`,
         actions: [
           {
             id: 'push',
-            label: `Push to ${status.remoteBranch || 'origin'}`,
+            label: `git push origin ${status.currentBranch}`,
             command: `git push origin ${status.currentBranch}`,
             type: 'push'
           }
@@ -178,25 +214,32 @@ class GitAnalyzer {
       })
     }
 
-    // 5. En una feature branch - sugerir merge a main
+    // ============================================
+    // PASO 3: ¿Estás en feature y todo está pusheado? → MERGE
+    // Solo sugerir merge si NO hay cambios pendientes Y nada por push
+    // ============================================
     const mainBranches = ['main', 'master']
-    if (!mainBranches.includes(status.currentBranch) &&
-        status.currentBranch.startsWith('feature/')) {
+    const isOnFeature = !mainBranches.includes(status.currentBranch) &&
+                       (status.currentBranch.startsWith('feature/') ||
+                        status.currentBranch.startsWith('refactor/') ||
+                        status.currentBranch.startsWith('fix/'))
+
+    if (isOnFeature && totalChanges === 0 && status.ahead === 0) {
       const mainBranch = status.allBranches.find(b => mainBranches.includes(b))
       if (mainBranch) {
         suggestions.push({
           id: 'merge-to-main',
           priority: 'medium',
           icon: '🔀',
-          title: `Mergear '${status.currentBranch}' a ${mainBranch}`,
-          description: 'Si la feature está lista, intégrala a la rama principal',
+          title: `Paso 4: Mergear a ${mainBranch}`,
+          description: `Tu feature '${status.currentBranch}' está lista. Intégrala a producción.`,
           actions: [
             {
-              id: 'checkout-main',
-              label: `Checkout to ${mainBranch}`,
+              id: 'checkout-and-merge',
+              label: `Merge '${status.currentBranch}' → ${mainBranch}`,
               command: `git checkout ${mainBranch}`,
               type: 'checkout',
-              followUp: 'merge'
+              followUp: `git merge ${status.currentBranch} --no-ff -m "merge: integrate ${status.currentBranch}"`
             }
           ]
         })

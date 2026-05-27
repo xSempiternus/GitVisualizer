@@ -27,40 +27,58 @@ function SmartSuggestions({ onActionExecuted }) {
 
   useEffect(() => {
     fetchSuggestions()
-    // Refresh sugerencias cada 15 segundos
-    const interval = setInterval(fetchSuggestions, 15000)
+    // Refresh sugerencias cada 3 segundos (responsive a cambios)
+    const interval = setInterval(fetchSuggestions, 3000)
     return () => clearInterval(interval)
   }, [])
+
+  const runCommand = async (command) => {
+    const res = await fetch('/api/execute-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command })
+    })
+    return res.json()
+  }
 
   const executeAction = async (action) => {
     setExecuting(action.id)
     setFeedback(null)
 
     try {
-      const res = await fetch('/api/execute-action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: action.command })
-      })
+      // Ejecutar comando principal
+      const result = await runCommand(action.command)
 
-      const result = await res.json()
-
-      if (result.success) {
-        setFeedback({
-          type: 'success',
-          message: `✓ Ejecutado: ${action.label}`
-        })
-        // Refrescar sugerencias después de una acción
-        setTimeout(() => {
-          fetchSuggestions()
-          if (onActionExecuted) onActionExecuted()
-        }, 500)
-      } else {
+      if (!result.success) {
         setFeedback({
           type: 'error',
-          message: `✗ Error: ${result.error}`
+          message: `✗ ${result.error}`
         })
+        return
       }
+
+      // Si hay followUp (ej: checkout + merge), ejecutarlo
+      if (action.followUp) {
+        const followResult = await runCommand(action.followUp)
+        if (!followResult.success) {
+          setFeedback({
+            type: 'error',
+            message: `✗ Follow-up: ${followResult.error}`
+          })
+          return
+        }
+      }
+
+      setFeedback({
+        type: 'success',
+        message: `✓ ${action.label}`
+      })
+
+      // Refrescar después de la acción
+      setTimeout(() => {
+        fetchSuggestions()
+        if (onActionExecuted) onActionExecuted()
+      }, 500)
     } catch (err) {
       setFeedback({
         type: 'error',
@@ -68,7 +86,6 @@ function SmartSuggestions({ onActionExecuted }) {
       })
     } finally {
       setExecuting(null)
-      // Auto-clear feedback después de 4 segundos
       setTimeout(() => setFeedback(null), 4000)
     }
   }

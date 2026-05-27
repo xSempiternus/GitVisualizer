@@ -51,9 +51,11 @@ function GitGraph({ data, branches }) {
   const dataSignatureRef = useRef(null)
   const prevResetKeyRef = useRef(0)
 
-  // Refs para la animación
+  // Refs para la animación (persistentes a través de renders)
   const animationFrameRef = useRef(null)
   const isAnimatingRef = useRef(true)
+  const particlesRef = useRef([])
+  const particleNodesRef = useRef(null)
 
   const [resetKey, setResetKey] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
@@ -432,6 +434,10 @@ function GitGraph({ data, branches }) {
       .attr('fill', d => d.color)
       .attr('filter', 'url(#particle-glow)')
 
+    // Guardar referencias para el animation loop persistente
+    particlesRef.current = particles
+    particleNodesRef.current = particleNodes
+
     // SVG filter para el glow effect (definido una sola vez)
     const defs = svg.append('defs')
     const filter = defs.append('filter')
@@ -650,44 +656,8 @@ function GitGraph({ data, branches }) {
       })
     }
 
-    // ============================================
-    // PASO 8: LOOP DE ANIMACIÓN (electrones)
-    // ============================================
-
-    function animate() {
-      if (!isAnimatingRef.current) {
-        // Pausado - aún así seguir pidiendo frames para detectar cuando se reanuda
-        animationFrameRef.current = requestAnimationFrame(animate)
-        return
-      }
-
-      // Actualizar posición de cada partícula
-      particleNodes.attr('transform', function(d) {
-        // Avanzar el offset
-        d.offset += PARTICLE_SPEED
-        if (d.offset > 1) d.offset = 0
-
-        // Calcular posición en el path
-        // Las partículas van del padre (más viejo, más abajo) al hijo (más nuevo, más arriba)
-        // Pero el path va de source (hijo) a target (padre)
-        // Entonces invertimos: 1 - offset
-        const point = d.pathEl.getPointAtLength((1 - d.offset) * d.length)
-        return `translate(${point.x}, ${point.y})`
-      })
-
-      animationFrameRef.current = requestAnimationFrame(animate)
-    }
-
-    // Iniciar el loop
-    animationFrameRef.current = requestAnimationFrame(animate)
-
     return () => {
-      // Detener animación
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-
-      // Guarda posiciones al desmontar
+      // Guarda posiciones al desmontar (NO detiene animación)
       nodes.forEach(n => {
         if (n.fx !== undefined && n.fy !== undefined) {
           positionsRef.current.set(n.id, {
@@ -701,6 +671,41 @@ function GitGraph({ data, branches }) {
     }
 
   }, [data, resetKey])
+
+  // ============================================
+  // Animation loop persistente (NO depende de data)
+  // ============================================
+  useEffect(() => {
+    const PARTICLE_SPEED = 0.004 // velocidad de partículas
+
+    function animate() {
+      if (isAnimatingRef.current && particleNodesRef.current && particlesRef.current.length > 0) {
+        try {
+          particleNodesRef.current.attr('transform', function(d) {
+            d.offset += PARTICLE_SPEED
+            if (d.offset > 1) d.offset = 0
+
+            // Calcular posición en el path (invertido: del padre al hijo)
+            const length = d.pathEl.getTotalLength ? d.pathEl.getTotalLength() : d.length
+            const point = d.pathEl.getPointAtLength((1 - d.offset) * length)
+            return `translate(${point.x}, ${point.y})`
+          })
+        } catch (e) {
+          // Path puede no estar disponible momentáneamente durante re-render
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, []) // Solo se ejecuta una vez al montar
 
   const handleReset = () => {
     positionsRef.current.clear()
